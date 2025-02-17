@@ -1,2 +1,2 @@
-# store
-test project for handmade store
+# Veldrin.store
+WP template for my handmade store
