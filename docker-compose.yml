@@ -1,0 +1,33 @@
+services:
+  db:
+    platform: linux/x86_64
+    image: mysql:5.7
+    volumes:
+      - store_db_data:/var/lib/mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: store
+      MYSQL_DATABASE: store
+      MYSQL_USER: store
+      MYSQL_PASSWORD: store
+
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    volumes:
+      - ./:/var/www/html
+    ports:
+      - "8000:80"
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: store
+      WORDPRESS_DB_PASSWORD: store
+      WORDPRESS_DB_NAME: store
+      WORDPRESS_DEBUG: true
+volumes:
+  store_db_data: {}
+  wp-content: {}
