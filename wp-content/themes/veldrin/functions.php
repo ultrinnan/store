@@ -11,9 +11,19 @@ function f_scripts_styles()
 add_action('wp_enqueue_scripts', 'f_scripts_styles', 1);
 
 add_theme_support('menus');
+
 //custom locations for menus
 function f_register_menus() {
     register_nav_menu( 'header', __( 'Header menu', 'theme-slug' ) );
     register_nav_menu( 'footer', __( 'Footer menu', 'theme-slug' ) );
 }
 add_action( 'after_setup_theme', 'f_register_menus' );
+
+function my_child_theme_add_woocommerce_support() {
+    add_theme_support('woocommerce');
+    // Enable product gallery features (optional but recommended)
+    add_theme_support('wc-product-gallery-zoom');
+    add_theme_support('wc-product-gallery-lightbox');
+    add_theme_support('wc-product-gallery-slider');
+}
+add_action('after_setup_theme', 'my_child_theme_add_woocommerce_support');
