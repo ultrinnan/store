@@ -32,6 +32,7 @@ wp-config.php
 /wp-content/uploads/
 
 .idea
+*.DS_Store*
 
 # Log files
 *.log
@@ -56,3 +57,4 @@ wp-config.php
 /wp-content/jetpack-waf
 /.well-known/apple-developer-merchantid-domain-association
 /wp-content/boost-cache/
+/wp-content/advanced-cache.php
