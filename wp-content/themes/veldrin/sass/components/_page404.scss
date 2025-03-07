@@ -1,0 +1,32 @@
+@use '../helpers/index' as *;
+
+.error404 {
+  text-align: center;
+  &.head {
+    background: url(image-url('/bg/default.jpg')) center no-repeat;
+    background-size: cover;
+    min-height: 40vh;
+  }
+  .container {
+    h1 {
+      color: $yellow;
+      font-size: 100px;
+      margin: 32px auto;
+    }
+    h2 {
+      margin-bottom: 24px;
+    }
+  }
+}
+
+@media screen and (max-width: 1440px) { // max-width: 1440px
+}
+
+@media screen and (max-width: 1024px) { // max-width: 1024px
+}
+
+@media screen and (max-width: 768px) { // max-width: 768px
+}
+
+@media screen and (max-width: 590px) { // max-width: 590px
+}

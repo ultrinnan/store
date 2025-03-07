@@ -30,3 +30,10 @@ This theme, like WordPress, is licensed under the GPL.
     margin: 50px auto;
 }
 
+.open-button {
+  position: absolute;
+  top: 75%;
+  border: 2px solid #ffcc00;
+  border-radius: 30px;
+}
+

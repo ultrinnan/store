@@ -23,7 +23,7 @@ wp-config.php
 # Example themes
 /wp-content/themes/twenty*/
 /wp-content/themes/uarchery
-/wp-content/themes/storefront/
+/wp-content/themes/veldrin/node_modules/
 
 # Example plugin
 /wp-content/plugins/hello.php
@@ -55,3 +55,4 @@ wp-config.php
 /wp-content/backup*
 /wp-content/jetpack-waf
 /.well-known/apple-developer-merchantid-domain-association
+/wp-content/boost-cache/

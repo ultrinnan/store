@@ -1,0 +1,16 @@
+{
+  "version": 3,
+  "settings": {
+    "layout": {
+      "wideSize": "1200px",
+      "contentSize": "800px"
+    }
+  },
+  "templateParts": [
+    {
+      "name": "footer",
+      "title": "Footer",
+      "area": "footer"
+    }
+  ]
+}
