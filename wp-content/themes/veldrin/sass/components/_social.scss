@@ -1,10 +1,12 @@
 @use '../helpers/index' as *;
 
-.social_join {
-  font-size: 20px;
-  text-transform: uppercase;
-  margin-right: 32px;
+.social-box {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 16px;
 }
+
 .social {
   display: block;
   width: 40px;
@@ -52,10 +54,4 @@
 }
 
 @media screen and (max-width: 590px) { // max-width: 590px
-  .social_join {
-    width: 100%;
-    margin: 0 0 16px;
-    text-align: center;
-    font-size: 16px;
-  }
 }

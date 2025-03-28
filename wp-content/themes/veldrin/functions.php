@@ -1,5 +1,10 @@
 <?php
 
+//security hooks
+require 'admin/security_hooks.php';
+//dashboard customization
+require 'admin/admin_customizations.php';
+
 function f_scripts_styles()
 {
     wp_enqueue_style('f_style', get_template_directory_uri() . '/../veldrin/css/main.min.css');
@@ -20,5 +25,7 @@ function custom_theme_setup() {
 
     register_nav_menu( 'header', __( 'Header menu', 'theme-slug' ) );
     register_nav_menu( 'footer', __( 'Footer menu', 'theme-slug' ) );
+    register_nav_menu( 'footer_shop', __( 'Footer shop menu', 'theme-slug' ) );
+    register_nav_menu( 'bottom', __( 'Bottom menu', 'theme-slug' ) );
 }
 add_action('after_setup_theme', 'custom_theme_setup');

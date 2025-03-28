@@ -104,12 +104,17 @@
   }
 }
 
-.footer_menu {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+.footer-menu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   li {
-    width: 22%;
+    a {
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 

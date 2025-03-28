@@ -1,0 +1,10 @@
+.admin_custom .form-group{
+    margin: 8px 0 16px;
+}
+
+.admin_custom .form-group label{
+    display: block;
+}
+.admin_custom .form-group input{
+    width: 50%;
+}
