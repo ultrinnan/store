@@ -75,7 +75,7 @@ npx gulp  # Watches for changes and auto-compiles
 ### Testing Your Setup
 ```bash
 # Run automated tests
-./test-local-setup.sh
+./scripts/test-local-setup.sh
 
 # Check for PHP errors
 find wp-content/themes/veldrin -name "*.php" -exec php -l {} \;
@@ -102,9 +102,18 @@ store/
 │           ├── partials/      # PHP template parts
 │           ├── admin/         # Admin customizations
 │           └── functions.php  # Theme functions
-├── LOCAL_DEVELOPMENT.md       # Detailed setup guide
-├── DEVELOPMENT_WORKFLOW.md    # Development workflow
-└── test-local-setup.sh       # Automated testing script
+└── scripts/                   # Development scripts and tools
+    ├── import-production.sh   # Production database import script
+    ├── quick-import.sh       # Quick import one-liner
+    ├── test-local-setup.sh   # Automated testing script
+    ├── update-urls.sql       # URL update script
+    ├── update-urls-final.sql # Final URL cleanup
+    ├── veldrin_store.sql     # Production database dump
+    ├── LOCAL_DEVELOPMENT.md  # Detailed setup guide
+    ├── DEVELOPMENT_WORKFLOW.md # Development workflow
+    ├── DATABASE_IMPORT_GUIDE.md # Database import guide
+    ├── DEBUG_MODE_GUIDE.md   # Debug mode management
+    └── IMPORT_SUMMARY.md     # Quick import reference
 ```
 
 ## 🎨 Theme Customization
@@ -150,6 +159,12 @@ $blue: #0057b8;    // Ukrainian flag
 
 ### Database Operations
 ```bash
+# Quick production import (recommended)
+./scripts/import-production.sh
+
+# Or use the quick one-liner
+./scripts/quick-import.sh
+
 # Export database
 docker compose exec db mysqldump -u store -pstore store > backup.sql
 

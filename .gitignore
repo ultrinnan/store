@@ -58,3 +58,6 @@ wp-config.php
 /.well-known/apple-developer-merchantid-domain-association
 /wp-content/boost-cache/
 /wp-content/advanced-cache.php
+
+# local scripts for experiments etc.
+/scripts
