@@ -27,7 +27,8 @@ services:
       WORDPRESS_DB_USER: store
       WORDPRESS_DB_PASSWORD: store
       WORDPRESS_DB_NAME: store
-      WORDPRESS_DEBUG: true
+      WORDPRESS_DEBUG: false
+      WORDPRESS_DEBUG_LOG: false
 volumes:
   store_db_data: {}
   wp-content: {}

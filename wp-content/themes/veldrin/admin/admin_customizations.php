@@ -42,8 +42,11 @@ function add_dashboard_widgets() {
 add_action('wp_dashboard_setup', 'add_dashboard_widgets' );
 
 function admin_css_js() {
-  wp_enqueue_style('admin_style', get_template_directory_uri() .'/../veldrin/admin/css/admin_styles.css', '', '1');
-  wp_enqueue_script('admin_js', get_template_directory_uri ().'/../veldrin/admin/js/admin_scripts.js', 'jquery', '1');
+  $admin_css_file = get_template_directory() . '/admin/css/admin_styles.css';
+  $admin_js_file = get_template_directory() . '/admin/js/admin_scripts.js';
+  
+  wp_enqueue_style('admin_style', get_template_directory_uri() .'/admin/css/admin_styles.css', '', file_exists($admin_css_file) ? filemtime($admin_css_file) : '1.0');
+  wp_enqueue_script('admin_js', get_template_directory_uri() .'/admin/js/admin_scripts.js', 'jquery', file_exists($admin_js_file) ? filemtime($admin_js_file) : '1.0');
 }
 add_action( 'admin_enqueue_scripts', 'admin_css_js' );
 

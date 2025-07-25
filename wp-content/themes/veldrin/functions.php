@@ -7,10 +7,14 @@ require 'admin/admin_customizations.php';
 
 function f_scripts_styles()
 {
-    wp_enqueue_style('f_style', get_template_directory_uri() . '/../veldrin/css/main.min.css');
-    wp_enqueue_style('style', get_template_directory_uri() . '/../veldrin/style.css');
+    $css_file = get_template_directory() . '/css/main.min.css';
+    $style_file = get_template_directory() . '/style.css';
+    $js_file = get_template_directory() . '/js/main.min.js';
+    
+    wp_enqueue_style('f_style', get_template_directory_uri() . '/css/main.min.css', array(), file_exists($css_file) ? filemtime($css_file) : '1.0');
+    wp_enqueue_style('style', get_template_directory_uri() . '/style.css', array(), file_exists($style_file) ? filemtime($style_file) : '1.0');
 
-//    wp_enqueue_script('f_scripts', get_template_directory_uri() . '/js/main.min.js', array('jquery'), '1.0', true);
+    wp_enqueue_script('f_scripts', get_template_directory_uri() . '/js/main.min.js', array('jquery'), file_exists($js_file) ? filemtime($js_file) : '1.0', true);
 }
 add_action('wp_enqueue_scripts', 'f_scripts_styles');
 

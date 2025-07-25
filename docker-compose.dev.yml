@@ -1,0 +1,8 @@
+version: '3.8'
+
+services:
+  wordpress:
+    environment:
+      WORDPRESS_DEBUG: true
+      WORDPRESS_DEBUG_LOG: true
+      WORDPRESS_DEBUG_DISPLAY: true 
