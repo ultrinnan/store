@@ -102,18 +102,24 @@ store/
 │           ├── partials/      # PHP template parts
 │           ├── admin/         # Admin customizations
 │           └── functions.php  # Theme functions
-└── scripts/                   # Development scripts and tools
-    ├── import-production.sh   # Production database import script
-    ├── quick-import.sh       # Quick import one-liner
-    ├── test-local-setup.sh   # Automated testing script
-    ├── update-urls.sql       # URL update script
-    ├── update-urls-final.sql # Final URL cleanup
-    ├── veldrin_store.sql     # Production database dump
-    ├── LOCAL_DEVELOPMENT.md  # Detailed setup guide
-    ├── DEVELOPMENT_WORKFLOW.md # Development workflow
-    ├── DATABASE_IMPORT_GUIDE.md # Database import guide
-    ├── DEBUG_MODE_GUIDE.md   # Debug mode management
-    └── IMPORT_SUMMARY.md     # Quick import reference
+├── scripts/                   # Development scripts and tools
+│   ├── import-production.sh   # Production database import script
+│   ├── quick-import.sh       # Quick import one-liner
+│   ├── test-local-setup.sh   # Automated testing script
+│   ├── update-urls.sql       # URL update script
+│   ├── update-urls-final.sql # Final URL cleanup
+│   ├── veldrin_store.sql     # Production database dump
+│   ├── LOCAL_DEVELOPMENT.md  # Detailed setup guide
+│   ├── DEVELOPMENT_WORKFLOW.md # Development workflow
+│   ├── DATABASE_IMPORT_GUIDE.md # Database import guide
+│   ├── DEBUG_MODE_GUIDE.md   # Debug mode management
+│   └── IMPORT_SUMMARY.md     # Quick import reference
+├── sync_scripts/              # Production-ready import scripts
+│   ├── main_import.sh        # Main orchestration script
+│   ├── 01_fetch_products.sh  # Step 1: Fetch fresh product data
+│   ├── 02_analyze_products.sh # Step 2: Analyze product structure
+│   └── README.md             # Import scripts documentation
+└── tmp/                      # Temporary files (protected)
 ```
 
 ## 🎨 Theme Customization
@@ -175,6 +181,19 @@ docker compose exec -T db mysql -u store -pstore store < backup.sql
 docker compose down
 docker volume rm store_store_db_data
 docker compose up -d
+```
+
+### Product Import & Management
+```bash
+# 🚀 RECOMMENDED: Run complete import process
+./sync_scripts/main_import.sh
+
+# Or run steps individually:
+./sync_scripts/01_fetch_products.sh                 # Step 1: Fetch fresh data
+./sync_scripts/02_analyze_products.sh               # Step 2: Analyze product structure
+
+# View comprehensive import solution guide
+cat scripts/COMPREHENSIVE_IMPORT_SOLUTION.md
 ```
 
 ## 🔧 Useful Commands

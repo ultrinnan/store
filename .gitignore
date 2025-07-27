@@ -61,3 +61,5 @@ wp-config.php
 
 # local scripts for experiments etc.
 /scripts
+/tmp/*
+!/tmp/.htaccess
