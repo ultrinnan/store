@@ -89,6 +89,15 @@ cd wp-content/themes/veldrin && npx gulp development
 ```
 store/
 ├── docker-compose.yml          # Docker configuration
+├── sync_scripts/              # Product import automation scripts
+│   ├── main_import.sh         # Main orchestration script
+│   ├── 01_fetch_products.sh   # Step 1: Fetch product data
+│   ├── 02_analyze_products.sh # Step 2: Analyze product structure
+│   ├── 03_prepare_categories_attributes.php # Step 3: Create categories & brands ✅
+│   ├── 04_split_products.php  # Step 4: Split products (simple/variable) ✅
+│   ├── 05_import_simple_products.php # Step 5: Import simple products (TODO)
+│   ├── 06_import_variable_products.php # Step 6: Import variable products (TODO)
+│   └── 07_import_all_products.php # Step 7: Complete import orchestration (TODO)
 ├── wp-content/
 │   └── themes/
 │       └── veldrin/           # Custom WordPress theme
@@ -118,6 +127,7 @@ store/
 │   ├── main_import.sh        # Main orchestration script
 │   ├── 01_fetch_products.sh  # Step 1: Fetch fresh product data
 │   ├── 02_analyze_products.sh # Step 2: Analyze product structure
+│   ├── 03_prepare_categories_attributes.sh # Step 3: Prepare categories, attributes, brands
 │   └── README.md             # Import scripts documentation
 └── tmp/                      # Temporary files (protected)
 ```

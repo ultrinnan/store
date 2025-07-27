@@ -135,31 +135,32 @@ main() {
                log_error "❌ Step 2 failed. Stopping import process."
                exit 1
            fi
+           
+           # Step 3: Prepare categories, attributes, and brands
+           log_info "Step 3: Preparing categories, attributes, and brands..."
+           if run_script "./03_prepare_categories_attributes.sh" "Prepare categories, attributes, and brands"; then
+               log "✅ Step 3 completed successfully"
+           else
+               log_error "❌ Step 3 failed. Stopping import process."
+               exit 1
+           fi
     
     # TODO: Add more steps as we create them
-    # Step 2: Analyze product data
-    # if run_script "./02_analyze_products.sh" "Analyze product data structure"; then
-    #     log "✅ Step 2 completed successfully"
-    # else
-    #     log_error "❌ Step 2 failed. Stopping import process."
-    #     exit 1
-    # fi
-    
-    # Step 3: Generate import CSV
-    # if run_script "./03_generate_import.sh" "Generate WooCommerce import CSV"; then
-    #     log "✅ Step 3 completed successfully"
-    # else
-    #     log_error "❌ Step 3 failed. Stopping import process."
-    #     exit 1
-    # fi
-    
-    # Step 4: Import to WooCommerce
-    # if run_script "./04_import_to_woo.sh" "Import products to WooCommerce"; then
+    # Step 4: Generate import CSV
+    # if run_script "./04_generate_import.sh" "Generate WooCommerce import CSV"; then
     #     log "✅ Step 4 completed successfully"
     # else
     #     log_error "❌ Step 4 failed. Stopping import process."
     #     exit 1
-               # fi
+    # fi
+    
+    # Step 5: Import to WooCommerce
+    # if run_script "./05_import_to_woo.sh" "Import products to WooCommerce"; then
+    #     log "✅ Step 5 completed successfully"
+    # else
+    #     log_error "❌ Step 5 failed. Stopping import process."
+    #     exit 1
+    # fi
            
            # Final cleanup
            cleanup_final
