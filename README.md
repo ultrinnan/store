@@ -1,341 +1,135 @@
-# Veldrin Craftworks Store
+# Veldrin Store
 
-A modern WordPress e-commerce store specializing in leather goods, archery equipment, and tools. Built with a custom WordPress theme and WooCommerce integration.
+WordPress-based e-commerce store with optimized image handling and production-ready Docker configuration.
 
-## 🏗️ System Overview
-
-### Technology Stack
-- **Backend**: WordPress 6.7+ with WooCommerce
-- **Frontend**: Custom WordPress theme (Veldrin)
-- **Styling**: SCSS with Gulp build system
-- **Database**: MySQL 8.0
-- **Development**: Docker containerization
-- **Package Manager**: pnpm
-
-### Key Features
-- 🛍️ **E-commerce**: Full WooCommerce integration
-- 🎨 **Custom Theme**: Modern, responsive design
-- 🔧 **Admin Customization**: Custom dashboard and settings
-- 📱 **Mobile-First**: Responsive design for all devices
-- 🚀 **Performance**: Optimized assets and caching
-- 🔒 **Security**: WordPress security hardening
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ and pnpm
-- Git
-
-### 1. Clone and Setup
-```bash
-# Clone the repository
-git clone <repository-url>
-cd store
-
-# Start the development environment
-docker compose up -d
-```
-
-### 2. Install Theme Dependencies
-```bash
-# Navigate to theme directory
-cd wp-content/themes/veldrin
-
-# Install dependencies
-pnpm install
-
-# Build assets
-npx gulp development
-```
-
-### 3. Access Your Site
-- **Frontend**: http://localhost:8000
-- **Admin Panel**: http://localhost:8000/wp-admin
-- **Database**: localhost:3306 (user: `store`, password: `store`)
-
-## 🛠️ Development Workflow
-
-### Starting Development
-```bash
-# 1. Start containers
-docker compose up -d
-
-# 2. Start theme build process (in new terminal)
-cd wp-content/themes/veldrin
-npx gulp  # Watches for changes and auto-compiles
-```
-
-### Making Changes
-- **SCSS/CSS**: Edit files in `sass/` → auto-compiles to `css/`
-- **JavaScript**: Edit files in `js/` → auto-bundles to `js/main.min.js`
-- **PHP**: Edit theme files → changes immediately visible
-- **Refresh browser** to see changes
-
-### Testing Your Setup
-```bash
-# Run automated tests
-./scripts/test-local-setup.sh
-
-# Check for PHP errors
-find wp-content/themes/veldrin -name "*.php" -exec php -l {} \;
-
-# Verify SASS compilation
-cd wp-content/themes/veldrin && npx gulp development
-```
-
-## 📁 Project Structure
+## 🏗️ Project Structure
 
 ```
 store/
-├── docker-compose.yml          # Docker configuration
-├── sync_scripts/              # Product import automation scripts
-│   ├── main_import.sh         # Main orchestration script
-│   ├── 01_fetch_products.sh   # Step 1: Fetch product data
-│   ├── 02_analyze_products.sh # Step 2: Analyze product structure
-│   ├── 03_prepare_categories_attributes.php # Step 3: Create categories & brands ✅
-│   ├── 04_split_products.php  # Step 4: Split products (simple/variable) ✅
-│   ├── 05_import_simple_products.php # Step 5: Import simple products (TODO)
-│   ├── 06_import_variable_products.php # Step 6: Import variable products (TODO)
-│   └── 07_import_all_products.php # Step 7: Complete import orchestration (TODO)
-├── wp-content/
-│   └── themes/
-│       └── veldrin/           # Custom WordPress theme
-│           ├── sass/          # SCSS source files
-│           │   ├── base/      # Base styles
-│           │   ├── components/ # Component styles
-│           │   └── helpers/   # Variables and mixins
-│           ├── css/           # Compiled CSS (auto-generated)
-│           ├── js/            # JavaScript files
-│           ├── img/           # Images and icons
-│           ├── partials/      # PHP template parts
-│           ├── admin/         # Admin customizations
-│           └── functions.php  # Theme functions
-├── scripts/                   # Development scripts and tools
-│   ├── import-production.sh   # Production database import script
-│   ├── quick-import.sh       # Quick import one-liner
-│   ├── test-local-setup.sh   # Automated testing script
-│   ├── update-urls.sql       # URL update script
-│   ├── update-urls-final.sql # Final URL cleanup
-│   ├── veldrin_store.sql     # Production database dump
-│   ├── LOCAL_DEVELOPMENT.md  # Detailed setup guide
-│   ├── DEVELOPMENT_WORKFLOW.md # Development workflow
-│   ├── DATABASE_IMPORT_GUIDE.md # Database import guide
-│   ├── DEBUG_MODE_GUIDE.md   # Debug mode management
-│   └── IMPORT_SUMMARY.md     # Quick import reference
-├── sync_scripts/              # Production-ready import scripts
-│   ├── main_import.sh        # Main orchestration script
-│   ├── 01_fetch_products.sh  # Step 1: Fetch fresh product data
-│   ├── 02_analyze_products.sh # Step 2: Analyze product structure
-│   ├── 03_prepare_categories_attributes.sh # Step 3: Prepare categories, attributes, brands
-│   └── README.md             # Import scripts documentation
-└── tmp/                      # Temporary files (protected)
+├── src/                    # WordPress files (for production)
+│   ├── wp-admin/
+│   ├── wp-content/
+│   ├── wp-includes/
+│   └── wp-*.php
+├── docker-compose.yml      # Development environment
+├── docker-compose.dev.yml  # Legacy development config
+├── docker-compose.prod.yml # Production environment
+├── .env                    # Environment variables (create from .env.example)
+└── README.md
 ```
 
-## 🎨 Theme Customization
+## 🚀 Quick Start (Development)
 
-### Color Scheme
-Edit `sass/helpers/_variables.scss`:
-```scss
-$white: #fdf6e3;
-$black: #2e1f17;
-$gold: #ffcc00;
-$vine: #8b0000;
-$yellow: #ffd700;  // Ukrainian flag
-$blue: #0057b8;    // Ukrainian flag
-```
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd store
+   ```
 
-### Adding New Components
-1. Create SCSS file in `sass/components/`
-2. Import in `sass/components/_index.scss`
-3. Add JavaScript in `js/` directory
-4. Create PHP templates in `partials/`
+2. **Start development environment:**
+   ```bash
+   docker-compose up -d
+   ```
 
-### Admin Customizations
-- **Theme Settings**: Custom admin panel for site configuration
-- **Social Media**: Manage social media links
-- **Dashboard Widgets**: Custom admin dashboard widgets
+3. **Access the site:**
+   - Website: http://localhost:8000
+   - Database: localhost:3306 (user: store, password: store)
 
-## 🗄️ Database Management
+## 🏭 Production Deployment
 
-### Fresh Installation
-1. Visit http://localhost:8000
-2. Follow WordPress installation wizard
-3. Use database settings:
-   - Database Name: `store`
-   - Username: `store`
-   - Password: `store`
-   - Database Host: `db`
+1. **Prepare environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your production credentials
+   ```
 
-### Import Existing Database
+2. **Generate WordPress security keys:**
+   ```bash
+   curl -s https://api.wordpress.org/secret-key/1.1/salt/
+   ```
+
+3. **Deploy with production config:**
+   ```bash
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+
 ```bash
-# Export from live site using WP Migrate DB plugin
-# Import using database tool (phpMyAdmin, TablePlus, etc.)
+# Database
+MYSQL_ROOT_PASSWORD=your_secure_root_password
+MYSQL_DATABASE=veldrin
+MYSQL_USER=veldrin
+MYSQL_PASSWORD=your_secure_db_password
+
+# WordPress
+WORDPRESS_DB_HOST=db
+WORDPRESS_DB_USER=veldrin
+WORDPRESS_DB_PASSWORD=your_secure_db_password
+WORDPRESS_DB_NAME=veldrin
+WORDPRESS_DEBUG=false
+WORDPRESS_DEBUG_LOG=false
+
+# Security Keys (generate new ones)
+WORDPRESS_AUTH_KEY=your_auth_key_here
+WORDPRESS_SECURE_AUTH_KEY=your_secure_auth_key_here
+# ... (other security keys)
 ```
 
-### Database Operations
+## 📊 Optimization Features
+
+- ✅ **Image Optimization**: Reduced uploads from 55,000+ to 12,000+ files
+- ✅ **Custom Image Sizes**: Only necessary sizes generated
+- ✅ **Database Optimization**: Clean and optimized structure
+- ✅ **Production Ready**: Secure configuration for deployment
+
+## 🛠️ Development Commands
+
 ```bash
-# Quick production import (recommended)
-./scripts/import-production.sh
+# Start development environment
+docker-compose up -d
 
-# Or use the quick one-liner
-./scripts/quick-import.sh
-
-# Export database
-docker compose exec db mysqldump -u store -pstore store > backup.sql
-
-# Import database
-docker compose exec -T db mysql -u store -pstore store < backup.sql
-
-# Reset database (fresh start)
-docker compose down
-docker volume rm store_store_db_data
-docker compose up -d
-```
-
-### Product Import & Management
-```bash
-# 🚀 RECOMMENDED: Run complete import process
-./sync_scripts/main_import.sh
-
-# Or run steps individually:
-./sync_scripts/01_fetch_products.sh                 # Step 1: Fetch fresh data
-./sync_scripts/02_analyze_products.sh               # Step 2: Analyze product structure
-
-# View comprehensive import solution guide
-cat scripts/COMPREHENSIVE_IMPORT_SOLUTION.md
-```
-
-## 🔧 Useful Commands
-
-### Docker Operations
-```bash
-# Start containers
-docker compose up -d
-
-# Stop containers
-docker compose down
+# Stop services
+docker-compose down
 
 # View logs
-docker compose logs wordpress
-docker compose logs db
+docker-compose logs -f
 
-# Restart containers
-docker compose restart
-
-# Rebuild everything
-docker compose down --rmi all
-docker compose up -d
-```
-
-### Theme Development
-```bash
-# Install dependencies
-cd wp-content/themes/veldrin && pnpm install
-
-# Build assets
-npx gulp development
-
-# Watch for changes
-npx gulp
-
-# Update dependencies
-pnpm update
-```
-
-### Database Access
-```bash
-# Access MySQL directly
-docker compose exec db mysql -u store -pstore store
+# Access database
+docker exec -it veldrin-db-dev mysql -u store -pstore store
 
 # Backup database
-docker compose exec db mysqldump -u store -pstore store > backup.sql
+docker exec veldrin-db-dev mysqldump -u store -pstore store > backup.sql
 ```
 
-## 🐛 Troubleshooting
+## 🔒 Security Notes
 
-### Common Issues
+- Change default passwords in production
+- Use strong security keys
+- Enable HTTPS in production
+- Regular backups recommended
+- Keep WordPress and plugins updated
 
-#### Assets Not Loading
-```bash
-# Rebuild assets
-cd wp-content/themes/veldrin && npx gulp development
+## 📁 File Organization
 
-# Check file permissions
-ls -la css/ js/
-```
+- **Development**: Files in root directory for easy access
+- **Production**: Files in `src/` directory for clean deployment
+- **Backups**: Excluded from Git, stored separately
+- **Uploads**: Optimized and cleaned regularly
 
-#### SASS Compilation Errors
-```bash
-# Check for undefined variables
-cd wp-content/themes/veldrin && npx gulp development
+## 🚀 Deployment Checklist
 
-# Look for error messages in output
-```
-
-#### WordPress Not Loading
-```bash
-# Check container status
-docker compose ps
-
-# View logs
-docker compose logs wordpress
-
-# Restart everything
-docker compose down && docker compose up -d
-```
-
-#### Database Connection Issues
-```bash
-# Restart containers
-docker compose restart
-
-# Check database status
-docker compose exec db mysql -u store -pstore -e "SHOW DATABASES;"
-```
-
-### Debug Mode
-- Debug mode is enabled by default for development
-- Check bottom-right corner for debug indicator
-- Disable for production by setting `WP_DEBUG: false` in docker-compose.yml
-
-## 🚀 Production Deployment
-
-### Pre-deployment Checklist
-- [ ] Disable debug mode
-- [ ] Update database credentials
-- [ ] Set up SSL certificate
-- [ ] Configure caching
-- [ ] Set up backups
+- [ ] Update `.env` with production credentials
+- [ ] Generate new WordPress security keys
+- [ ] Test with `docker-compose.prod.yml`
+- [ ] Configure reverse proxy (nginx/traefik)
+- [ ] Set up SSL certificates
+- [ ] Configure backups
 - [ ] Test all functionality
+- [ ] Monitor performance
 
-### Building for Production
-```bash
-# Build optimized assets
-cd wp-content/themes/veldrin && npx gulp development
+## 📞 Support
 
-# Test locally
-docker compose up -d
-```
-
-## 📚 Additional Resources
-
-- [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) - Detailed local development guide
-- [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md) - Daily development workflow
-- [WordPress Documentation](https://wordpress.org/documentation/)
-- [WooCommerce Documentation](https://woocommerce.com/documentation/)
-
-## 🤝 Contributing
-
-1. Follow the development workflow in `DEVELOPMENT_WORKFLOW.md`
-2. Test your changes with `./test-local-setup.sh`
-3. Build assets before committing: `npx gulp development`
-4. Follow WordPress coding standards
-
-## 📄 License
-
-This project is licensed under the GNU General Public License v2 or later.
-
----
-
-**Built with ❤️ by [FEDIRKO.PRO](https://fedirko.pro)**
+For issues or questions, please check the documentation or contact the development team.

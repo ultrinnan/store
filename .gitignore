@@ -1,65 +1,62 @@
-# Wordpress - ignore core, configuration, examples, uploads and logs.
-# https://github.com/github/gitignore/blob/main/WordPress.gitignore
+# Environment files
+.env
+.env.local
+.env.production
 
-# Core
-#
-# Note: if you want to stage/commit WP core files
-# you can delete this whole section/until Configuration.
-/wp-admin/
-/wp-content/index.php
-/wp-content/languages
-/wp-content/plugins/index.php
-/wp-content/themes/index.php
-/wp-includes/
-/index.php
-/license.txt
-/readme.html
-/wp-*.php
-/xmlrpc.php
+# WordPress core files in src/ (ignore these as they should be installed via composer or downloaded)
+src/wp-admin/
+src/wp-includes/
+src/wp-*.php
+src/wp-config.php
+src/license.txt
+src/readme.html
+src/xmlrpc.php
+src/.htaccess
 
-# Configuration
-wp-config.php
+# Uploads (large files)
+src/wp-content/
 
-# Example themes
-/wp-content/themes/twenty*/
-/wp-content/themes/uarchery
-/wp-content/themes/veldrin/node_modules/
-
-# Example plugin
-/wp-content/plugins/hello.php
-
-# Uploads
-/wp-content/uploads/
-
-.idea
-*.DS_Store*
-
-# Log files
+# Logs
 *.log
+error_log
+access_log
 
-# htaccess
-/.htaccess
+# Database dumps
+*.sql
+*.sql.gz
 
-# All plugins
-#
-# Note: If you wish to whitelist plugins,
-# uncomment the next line
-#/wp-content/plugins
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+**/.DS_Store
 
-# All themes
-#
-# Note: If you wish to whitelist themes,
-# uncomment the next line
-#/wp-content/themes
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
 
-/wp-content/plugins
-/wp-content/backup*
-/wp-content/jetpack-waf
-/.well-known/apple-developer-merchantid-domain-association
-/wp-content/boost-cache/
-/wp-content/advanced-cache.php
+# Node modules (if any)
+node_modules/
+npm-debug.log*
 
-# local scripts for experiments etc.
-/scripts
-/tmp/*
-!/tmp/.htaccess
+# Backup files
+*backup*
+backup/
+uploads_backup_*/
+
+# Docker volumes
+db_data/
+store_db_data/
+
+# Temporary files
+tmp/
+
+.well-known/
+
+!src/wp-content/themes/veldrin
