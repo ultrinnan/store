@@ -59,4 +59,14 @@ tmp/
 
 .well-known/
 
+# Ignore everything in wp-content by default
+src/wp-content/*
+
+# Except the themes folder
+!src/wp-content/themes/
 !src/wp-content/themes/veldrin/
+!src/wp-content/themes/veldrin/**
+
+# Optional: also unignore plugins if needed
+!src/wp-content/plugins/
+!src/wp-content/plugins/my-plugin/
