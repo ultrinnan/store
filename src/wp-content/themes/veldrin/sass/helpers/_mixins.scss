@@ -1,0 +1,5 @@
+@use 'variables' as *;
+
+@function image-url($url) {
+  @return $images-path + $url;
+}

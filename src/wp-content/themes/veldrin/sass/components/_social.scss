@@ -1,0 +1,57 @@
+@use '../helpers/index' as *;
+
+.social-box {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.social {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0 8px;
+  border-radius: 50%;
+  &:hover {
+    -webkit-box-shadow: 0 0 10px $yellow;
+    box-shadow: 0 0 10px $yellow;
+  }
+  &.linkedin {
+    background: url(image-url('/icons/social/linkedin.svg')) center no-repeat;
+    background-size: contain;
+  }
+  &.facebook {
+    background: url(image-url('/icons/social/facebook.svg')) center no-repeat;
+    background-size: contain;
+  }
+  &.youtube {
+    background: url(image-url('/icons/social/youtube.svg')) center no-repeat;
+    background-size: contain;
+  }
+  &.twitter {
+    background: url(image-url('/icons/social/twitter.svg')) center no-repeat;
+    background-size: contain;
+  }
+  &.instagram {
+    background: url(image-url('/icons/social/instagram.svg')) center no-repeat;
+    background-size: contain;
+  }
+  &.telegram {
+    background: url(image-url('/icons/social/telegram.svg')) center no-repeat;
+    background-size: contain;
+  }
+}
+
+
+@media screen and (max-width: 1440px) { // max-width: 1440px
+}
+
+@media screen and (max-width: 1024px) { // max-width: 1024px
+}
+
+@media screen and (max-width: 768px) { // max-width: 768px
+}
+
+@media screen and (max-width: 590px) { // max-width: 590px
+}

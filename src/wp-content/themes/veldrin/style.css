@@ -1,0 +1,39 @@
+/*
+Theme Name: Veldrin store
+Template:   twentytwentyfour
+Theme URI: https://fedirko.pro
+Author: Serhii Fedirko FEDIRKO.PRO
+Author URI: https://fedirko.pro/
+Description: Clean and simple WP template for my store project site.
+Version: 1.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Tags: Veldrin
+Text Domain: Veldrin
+Domain Path: /languages
+
+This theme, like WordPress, is licensed under the GPL.
+*/
+
+.alignright{
+    float: right;
+    margin: 50px 0 50px 50px;
+}
+
+.alignleft {
+    float: left;
+    margin: 0 50px 50px 0;
+}
+
+.aligncenter {
+    display: block;
+    margin: 50px auto;
+}
+
+.open-button {
+  position: absolute;
+  top: 75%;
+  border: 2px solid #ffcc00;
+  border-radius: 30px;
+}
+
