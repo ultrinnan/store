@@ -5,7 +5,7 @@ function my_admin_logo() {
    echo '
     <script>
       window.onload = function() {
-        document.getElementById("footer-thankyou").innerHTML = "Created by <a target=\"_blank\" href=\"//fedirko.pro\">FEDIRKO.PRO</a>";        
+        document.getElementById("footer-thankyou").innerHTML = "Created by <a target=\"_blank\" href=\"//fedirko.pro\"><b>FEDIRKO.PRO</b></a>";        
       }
     </script>';
 }

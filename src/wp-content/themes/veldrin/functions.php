@@ -1,6 +1,6 @@
 <?php
 
-//dashboard customization
+//dashboard customization (few lines for style)
 require 'admin/admin_customizations.php';
 
 function f_scripts_styles()
