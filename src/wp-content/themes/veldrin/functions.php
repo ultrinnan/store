@@ -34,125 +34,99 @@ function custom_theme_setup() {
 add_action('after_setup_theme', 'custom_theme_setup');
 
 /**
- * ОПТИМІЗАЦІЯ ЗОБРАЖЕНЬ
- * Контроль розмірів зображень та видалення зайвих
+ * Simple image fallback system
+ * Prevents 404 errors for missing image sizes
  */
-
-// Видаляємо стандартні розміри зображень WordPress
-function remove_default_image_sizes() {
-    // Видаляємо зайві розміри
-    remove_image_size('thumbnail');
-    remove_image_size('medium');
-    remove_image_size('medium_large');
-    remove_image_size('large');
-    remove_image_size('1536x1536');
-    remove_image_size('2048x2048');
-}
-add_action('init', 'remove_default_image_sizes');
-
-// Встановлюємо тільки потрібні розміри
-function add_custom_image_sizes() {
-    // Додаємо тільки необхідні розміри
-    add_image_size('product-thumbnail', 300, 300, true);
-    add_image_size('product-medium', 600, 600, true);
-    add_image_size('product-large', 1024, 1024, false);
-}
-add_action('after_setup_theme', 'add_custom_image_sizes');
-
-// Видаляємо зайві розміри при завантаженні зображення
-function remove_unused_image_sizes($sizes) {
-    // Залишаємо тільки потрібні розміри
-    $allowed_sizes = array(
-        'product-thumbnail',
-        'product-medium', 
-        'product-large',
-        'full'
-    );
-    
-    return array_intersect_key($sizes, array_flip($allowed_sizes));
-}
-add_filter('intermediate_image_sizes_advanced', 'remove_unused_image_sizes');
-
-// Оптимізація якості JPEG
-function optimize_jpeg_quality() {
-    return 85; // Оптимальна якість
-}
-add_filter('jpeg_quality', 'optimize_jpeg_quality');
-
-// Автоматичне очищення при видаленні зображення
-function cleanup_image_sizes_on_delete($post_id) {
-    $post = get_post($post_id);
-    
-    if ($post->post_type === 'attachment') {
-        $file_path = get_attached_file($post_id);
-        $file_info = pathinfo($file_path);
-        $upload_dir = wp_upload_dir();
+function simple_image_fallback($image, $attachment_id, $size, $icon) {
+    if (empty($image) || !is_array($image) || empty($image[0])) {
+        $file_path = get_attached_file($attachment_id);
         
-        // Видаляємо всі розміри крім оригіналу
-        $sizes = get_intermediate_image_sizes();
-        foreach ($sizes as $size) {
-            $size_data = image_get_intermediate_size($post_id, $size);
-            if ($size_data) {
-                $size_file = $upload_dir['basedir'] . '/' . $size_data['file'];
-                if (file_exists($size_file)) {
-                    unlink($size_file);
+        if ($file_path && file_exists($file_path)) {
+            $upload_dir = wp_upload_dir();
+            $original_url = $upload_dir['baseurl'] . '/' . get_post_meta($attachment_id, '_wp_attached_file', true);
+            
+            $image_data = wp_get_attachment_metadata($attachment_id);
+            $width = isset($image_data['width']) ? $image_data['width'] : 0;
+            $height = isset($image_data['height']) ? $image_data['height'] : 0;
+            
+            return array($original_url, $width, $height, false);
+        }
+    }
+    
+    return $image;
+}
+
+// Apply fallback with high priority
+add_filter('wp_get_attachment_image_src', 'simple_image_fallback', 999, 4);
+
+/**
+ * Automatic image size regeneration
+ * Runs on frontend and creates missing sizes on demand
+ */
+function auto_regenerate_missing_sizes() {
+    // Only run once per session to avoid performance issues
+    if (get_transient('auto_regeneration_done')) {
+        return;
+    }
+    
+    // Only run for admin users or if explicitly requested
+    if (!current_user_can('manage_options') && !isset($_GET['regenerate_images'])) {
+        return;
+    }
+    
+    // Get all image attachments
+    $attachments = get_posts(array(
+        'post_type' => 'attachment',
+        'post_mime_type' => 'image',
+        'numberposts' => 50, // Limit to avoid timeout
+        'post_status' => 'any'
+    ));
+    
+    $processed = 0;
+    
+    foreach ($attachments as $attachment) {
+        $file_path = get_attached_file($attachment->ID);
+        
+        if ($file_path && file_exists($file_path)) {
+            // Check if metadata exists
+            $metadata = wp_get_attachment_metadata($attachment->ID);
+            
+            if (!$metadata || empty($metadata['sizes'])) {
+                // Regenerate all sizes
+                $new_metadata = wp_generate_attachment_metadata($attachment->ID, $file_path);
+                if ($new_metadata) {
+                    wp_update_attachment_metadata($attachment->ID, $new_metadata);
+                    $processed++;
                 }
             }
         }
     }
-}
-add_action('before_delete_post', 'cleanup_image_sizes_on_delete');
-
-// Додаємо адмін-сторінку для очищення медіа
-function add_media_cleanup_page() {
-    add_management_page(
-        'Очищення медіа',
-        'Очищення медіа', 
-        'manage_options',
-        'media-cleanup',
-        'media_cleanup_page'
-    );
-}
-add_action('admin_menu', 'add_media_cleanup_page');
-
-// Сторінка очищення медіа
-function media_cleanup_page() {
-    if (isset($_POST['cleanup_media'])) {
-        // Логіка очищення
-        $removed = 0;
-        $attachments = get_posts(array(
-            'post_type' => 'attachment',
-            'numberposts' => -1,
-            'post_status' => 'any'
-        ));
-        
-        foreach ($attachments as $attachment) {
-            $file_path = get_attached_file($attachment->ID);
-            if (file_exists($file_path)) {
-                // Видаляємо зайві розміри
-                $sizes = get_intermediate_image_sizes();
-                foreach ($sizes as $size) {
-                    $size_data = image_get_intermediate_size($attachment->ID, $size);
-                    if ($size_data) {
-                        $size_file = dirname($file_path) . '/' . basename($size_data['file']);
-                        if (file_exists($size_file) && $size_file !== $file_path) {
-                            unlink($size_file);
-                            $removed++;
-                        }
-                    }
-                }
-            }
-        }
-        
-        echo '<div class="notice notice-success"><p>Видалено ' . $removed . ' зайвих файлів.</p></div>';
-    }
     
-    echo '<div class="wrap">';
-    echo '<h1>Очищення медіа-файлів</h1>';
-    echo '<p>Цей інструмент видалить зайві розміри зображень.</p>';
-    echo '<form method="post">';
-    echo '<input type="submit" name="cleanup_media" value="Очистити медіа" class="button button-primary">';
-    echo '</form>';
-    echo '</div>';
+    // Set transient to prevent running again
+    set_transient('auto_regeneration_done', true, HOUR_IN_SECONDS);
+    
+    // Only show message if explicitly requested
+    if (isset($_GET['regenerate_images']) && current_user_can('manage_options')) {
+        add_action('wp_footer', function() use ($processed) {
+            echo '<script>console.log("Auto-regenerated ' . $processed . ' images");</script>';
+        });
+    }
 }
 
+// Run on init (both frontend and admin)
+add_action('init', 'auto_regenerate_missing_sizes');
+
+/**
+ * Admin notice for manual regeneration
+ */
+function admin_regeneration_notice() {
+    if (current_user_can('manage_options')) {
+        echo '<div class="notice notice-info">';
+        echo '<p><strong>Image Regeneration:</strong> ';
+        echo '<a href="' . admin_url('admin.php?page=regenerate-thumbnails') . '">Regenerate Thumbnails</a> ';
+        echo 'or visit <a href="' . home_url('/?regenerate_images=1') . '">Homepage with regeneration</a>';
+        echo '</p>';
+        echo '</div>';
+    }
+}
+add_action('admin_notices', 'admin_regeneration_notice');

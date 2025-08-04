@@ -1,4 +1,4 @@
 networks:
   proxy:
-    external: true
-    name: proxy
+    external: false
+    name: veldrin-local-proxy
