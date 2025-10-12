@@ -9,7 +9,7 @@ services:
       - store_db_data:/var/lib/mysql
 
   wordpress:
-    image: wordpress:latest
+    image: wordpress:php8.3-apache
     container_name: veldrin
     depends_on:
       - db
