@@ -14,6 +14,14 @@ function f_scripts_styles()
     wp_enqueue_style('style', get_stylesheet_directory_uri() . '/style.css', array(), file_exists($style_file) ? filemtime($style_file) : '1.0');
 
     wp_enqueue_script('f_scripts', get_stylesheet_directory_uri() . '/js/main.min.js', array('jquery'), file_exists($js_file) ? filemtime($js_file) : '1.0', true);
+
+    // LiveReload (development only)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $lr_host = 'localhost';
+        $lr_port = 35729;
+        // Always enqueue in development; the browser connects to localhost on the host machine.
+        wp_enqueue_script('livereload', 'http://' . $lr_host . ':' . $lr_port . '/livereload.js?snipver=1', array(), null, true);
+    }
 }
 add_action('wp_enqueue_scripts', 'f_scripts_styles');
 
@@ -58,60 +66,3 @@ function simple_image_fallback($image, $attachment_id, $size, $icon) {
 
 // Apply fallback with high priority
 add_filter('wp_get_attachment_image_src', 'simple_image_fallback', 999, 4);
-
-/**
- * Automatic image size regeneration
- * Runs on frontend and creates missing sizes on demand
- */
-function auto_regenerate_missing_sizes() {
-    // Only run once per session to avoid performance issues
-    if (get_transient('auto_regeneration_done')) {
-        return;
-    }
-    
-    // Only run for admin users or if explicitly requested
-    if (!current_user_can('manage_options') && !isset($_GET['regenerate_images'])) {
-        return;
-    }
-    
-    // Get all image attachments
-    $attachments = get_posts(array(
-        'post_type' => 'attachment',
-        'post_mime_type' => 'image',
-        'numberposts' => 50, // Limit to avoid timeout
-        'post_status' => 'any'
-    ));
-    
-    $processed = 0;
-    
-    foreach ($attachments as $attachment) {
-        $file_path = get_attached_file($attachment->ID);
-        
-        if ($file_path && file_exists($file_path)) {
-            // Check if metadata exists
-            $metadata = wp_get_attachment_metadata($attachment->ID);
-            
-            if (!$metadata || empty($metadata['sizes'])) {
-                // Regenerate all sizes
-                $new_metadata = wp_generate_attachment_metadata($attachment->ID, $file_path);
-                if ($new_metadata) {
-                    wp_update_attachment_metadata($attachment->ID, $new_metadata);
-                    $processed++;
-                }
-            }
-        }
-    }
-    
-    // Set transient to prevent running again
-    set_transient('auto_regeneration_done', true, HOUR_IN_SECONDS);
-    
-    // Only show message if explicitly requested
-    if (isset($_GET['regenerate_images']) && current_user_can('manage_options')) {
-        add_action('wp_footer', function() use ($processed) {
-            echo '<script>console.log("Auto-regenerated ' . $processed . ' images");</script>';
-        });
-    }
-}
-
-// Run on init (both frontend and admin)
-add_action('init', 'auto_regenerate_missing_sizes');

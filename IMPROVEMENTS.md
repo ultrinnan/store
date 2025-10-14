@@ -124,18 +124,13 @@ opcache.revalidate_freq=2
 ```
 
 ### Медіа та зображення
-- **Замість фронтової регенерації**: функція `auto_regenerate_missing_sizes()` зараз виконується на `init` (навіть у фронті для адмінів). Рекомендується перенести масову регенерацію у WP-CLI/адмін-сторінку/окремий action, щоб не створювати навантаження під час перегляду сайту.
 - **Обмеження розмірів**: додати фільтри `intermediate_image_sizes_advanced` для вимкнення непотрібних розмірів, `big_image_size_threshold`.
 - **Компресія та WebP**: плагін для компресії (Imagify/ShortPixel/Smush) і автогенерацію WebP, якщо CDN/Nginx не робить перекодування.
-- **Offload (опційно)**: винести медіа у S3-сумісне сховище для масштабування.
 
 ### Тема `veldrin`
 - **Child theme і батьківські стилі**: у `style.css` зазначено `Template: twentytwentyfour` (блок-тема). Перевірити, чи потрібне підключення стилів батьківської теми (для блокових тем зазвичай керує `theme.json`). Якщо планується «класична» ієрархія — додати підключення parent-style.
 - **Theme supports**: додати `title-tag`, `html5`, `post-thumbnails`, `custom-logo` за потреби. WooCommerce підтримка вже є.
 - **Скрипти/стилі**: зараз використовується `filemtime` для версіонування — це добре. Перевірити залежності та умовне підключення (на сторінках без потреби — не вантажити зайве).
-- **Адмін-посилання і безпека**: у `admin_regeneration_notice()` екранізувати URL через `esc_url()`, додати перевірку nonce для адмін-дій.
-- **Резервні файли**: видалити `functions.php.backup`.
-- **assets-пайплайн**: у темі є `gulpfile.js`, `package.json` і `pnpm-lock.yaml`. Уніфікувати інструмент (npm/yarn/pnpm), додати чіткі скрипти (`build`, `dev`, `watch`).
 
 ### WooCommerce
 - **Крон і планувальник**: переконатися, що працює `Action Scheduler` (критично для WC). Використовувати системний cron у проді.
@@ -152,48 +147,6 @@ opcache.revalidate_freq=2
 ### Моніторинг і спостережність
 - **Логи**: ротація логів PHP/NGINX, окремі volume для логів, централізований збір (ELK/Vector+Loki/Grafana, за потреби).
 - **Профілювання**: «Query Monitor» у dev/stage (не у проді), `New Relic`/`Blackfire` для глибокого профілювання.
-
-### Документація та відповідність репозиторію
-- **README vs реальність**: у README згадані `docker-compose.dev.yml` та `docker-compose.prod.yml`, їх нема в репозиторії. Або додайте ці файли, або оновіть README для актуальності.
-- **.env.example**: додати приклад `.env` з усіма потрібними ключами.
-- **.gitignore**: гарантувати ігнор `src/wp-content/debug.log`, бекапів, артефактів збірки.
-
-### Приклад `.env` (скорочено)
-```bash
-# DB
-MYSQL_ROOT_PASSWORD=change_me
-MYSQL_DATABASE=veldrin
-MYSQL_USER=veldrin
-MYSQL_PASSWORD=change_me
-
-# WP
-WORDPRESS_DB_HOST=db
-WORDPRESS_DB_USER=veldrin
-WORDPRESS_DB_PASSWORD=change_me
-WORDPRESS_DB_NAME=veldrin
-
-WP_ENVIRONMENT_TYPE=production
-WORDPRESS_DEBUG=false
-WORDPRESS_DEBUG_LOG=false
-WORDPRESS_DEBUG_DISPLAY=false
-
-WP_HOME=https://example.com
-WP_SITEURL=https://example.com
-WP_MEMORY_LIMIT=256M
-WP_MAX_MEMORY_LIMIT=512M
-WP_POST_REVISIONS=10
-AUTOSAVE_INTERVAL=120
-EMPTY_TRASH_DAYS=7
-
-# Redis
-WP_REDIS_HOST=redis
-WP_REDIS_PORT=6379
-
-# Keys & salts (обов’язково перегенерувати!)
-WORDPRESS_AUTH_KEY=...
-WORDPRESS_SECURE_AUTH_KEY=...
-# ... інші ключі
-```
 
 ### Прод-крон (приклад)
 ```bash

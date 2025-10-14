@@ -5,30 +5,30 @@
   "repository": "https://github.com/fedirko-pro/uarchery",
   "main": "./src/index.html",
   "scripts": {
-    "start": "gulp",
-    "dev": "gulp development"
+    "build": "cross-env SASS_SILENCE_DEPRECATIONS=legacy-js-api gulp development",
+    "watch": "cross-env SASS_SILENCE_DEPRECATIONS=legacy-js-api gulp",
+    "dev": "pnpm run build && pnpm run watch"
   },
   "author": "FEDIRKO.PRO",
   "license": "ISC",
   "browserslist": [
-    "last 1 version",
-    "> 1%",
-    "IE 10"
+    "last 2 versions",
+    "not IE 11"
   ],
   "devDependencies": {
+    "cross-env": "^10.1.0",
+    "esbuild": "^0.21.5",
     "gulp": "^4.0.2",
     "gulp-autoprefixer": "^8.0.0",
-    "gulp-babel": "^8.0.0",
     "gulp-clean-css": "^4.3.0",
     "gulp-cli": "^2.3.0",
-    "gulp-concat": "^2.6.1",
+    "gulp-dart-sass": "^1.1.0",
+    "gulp-esbuild": "^0.12.0",
+    "gulp-livereload": "^4.0.2",
     "gulp-rename": "^2.0.0",
     "gulp-sass": "^5.1.0",
     "gulp-sourcemaps": "^3.0.0",
-    "gulp-uglify": "^3.0.2",
-    "sass": "^1.53.0"
-  },
-  "dependencies": {
-    "@babel/preset-env": "^7.18.6"
+    "sass": "^1.53.0",
+    "sass-embedded": "^1.93.2"
   }
 }

@@ -26,12 +26,27 @@ store/
    cd store
    ```
 
-2. **Start development environment:**
+2. **Create and configure .env (enable WordPress debug for LiveReload):**
+   - Ensure `WORDPRESS_DEBUG=true` (and optionally `WORDPRESS_DEBUG_LOG=true`)
+   ```bash
+   # .env
+   WORDPRESS_DEBUG=true
+   WORDPRESS_DEBUG_LOG=true
+   ```
+
+3. **Start development environment:**
    ```bash
    docker-compose up -d
    ```
 
-3. **Access the site:**
+4. **Install theme deps and start watcher (Gulp + LiveReload):**
+   ```bash
+   cd src/wp-content/themes/veldrin
+   pnpm install
+   pnpm run watch
+   ```
+
+5. **Access the site:**
    - Website: http://localhost:8000
    - Database: localhost:3306 (user: store, password: store)
 
@@ -103,6 +118,32 @@ docker exec -it veldrin-db-dev mysql -u store -pstore store
 # Backup database
 docker exec veldrin-db-dev mysqldump -u store -pstore store > backup.sql
 ```
+
+### Theme Development (Gulp + LiveReload)
+
+- Styles: `sass/main.scss` compiles to `css/main.min.css` with sourcemaps.
+- Components are composed via `sass/components/_index.scss` and imported in `sass/main.scss`.
+- Scripts: entry `js/index.js` is bundled/minified to `js/main.min.js` via esbuild.
+- LiveReload: When `WORDPRESS_DEBUG=true`, the theme enqueues `http://localhost:35729/livereload.js` and auto-reloads on changes.
+
+Commands:
+```bash
+cd src/wp-content/themes/veldrin
+pnpm install
+pnpm run watch
+```
+
+Troubleshooting:
+- Port in use (35729):
+  ```bash
+  lsof -n -i :35729 | awk 'NR>1 {print $2}' | xargs -r kill -9
+  pnpm run watch
+  ```
+- No auto-reload:
+  - Confirm `.env` has `WORDPRESS_DEBUG=true` and containers are up.
+  - Ensure the watcher is running and recompiling on file changes.
+  - Hard refresh the browser; check that `livereload.js` loads (Network tab).
+  - Disable extensions that might block LiveReload/websockets.
 
 ## 🔒 Security Notes
 
