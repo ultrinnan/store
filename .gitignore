@@ -67,6 +67,10 @@ src/wp-content/*
 !src/wp-content/themes/veldrin/
 !src/wp-content/themes/veldrin/**
 
+# Also unignore mu-plugins
+!src/wp-content/mu-plugins/
+!src/wp-content/mu-plugins/**
+
 # Optional: also unignore plugins if needed
 !src/wp-content/plugins/
 !src/wp-content/plugins/my-plugin/

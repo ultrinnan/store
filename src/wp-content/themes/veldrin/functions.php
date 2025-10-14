@@ -115,18 +115,3 @@ function auto_regenerate_missing_sizes() {
 
 // Run on init (both frontend and admin)
 add_action('init', 'auto_regenerate_missing_sizes');
-
-/**
- * Admin notice for manual regeneration
- */
-function admin_regeneration_notice() {
-    if (current_user_can('manage_options')) {
-        echo '<div class="notice notice-info">';
-        echo '<p><strong>Image Regeneration:</strong> ';
-        echo '<a href="' . admin_url('admin.php?page=regenerate-thumbnails') . '">Regenerate Thumbnails</a> ';
-        echo 'or visit <a href="' . home_url('/?regenerate_images=1') . '">Homepage with regeneration</a>';
-        echo '</p>';
-        echo '</div>';
-    }
-}
-add_action('admin_notices', 'admin_regeneration_notice');
