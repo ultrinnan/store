@@ -7,10 +7,13 @@ header {
   }
   width: 100%;
   transition: all 0.3s;
-  border-bottom: 3px solid $blue;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   flex-direction: row;
+
+  .has-base-background-color {
+    background-color: transparent !important;
+  }
 
   .header_logo {
     display: flex;
