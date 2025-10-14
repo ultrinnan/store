@@ -20,8 +20,9 @@ services:
     ports:
       - "8000:80"
     networks:
-      - default
-      - proxy
+      proxy:
+        aliases: [veldrin]
+      default: {}
     labels:
       - "traefik.enable=false"
 
@@ -29,7 +30,6 @@ volumes:
   store_db_data:
 
 networks:
-  default:
   proxy:
     external: true
     name: proxy
