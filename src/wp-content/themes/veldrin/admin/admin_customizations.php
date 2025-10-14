@@ -50,8 +50,8 @@ add_action( 'admin_enqueue_scripts', 'admin_css_js' );
 
 //add a theme settings page to the dashboard menu
 function f_add_theme_settings() {
-    add_menu_page( 'Theme settings', 'Theme settings', 'administrator', 'f_theme_settings', 'f_theme_general_option', 'dashicons-desktop' );
-    add_submenu_page( 'f_theme_settings', 'Social settings', 'Social settings', 'administrator', 'f_social_settings', 'f_display_social_settings');
+    add_menu_page( 'Theme settings', 'Theme settings', 'manage_options', 'f_theme_settings', 'f_theme_general_option', 'dashicons-desktop' );
+    add_submenu_page( 'f_theme_settings', 'Social settings', 'Social settings', 'manage_options', 'f_social_settings', 'f_display_social_settings');
 }
 add_action( 'admin_menu', 'f_add_theme_settings');
 

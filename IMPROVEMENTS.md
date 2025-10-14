@@ -15,49 +15,6 @@
 - **Оптимізація PHP**: додати свій `php.ini` (opcache, memory limits, upload/post size). Для Apache образу — через `PHP_INI_*` директиви або volume з кастомним ini.
 - **Том для uploads**: якщо в проді не мапите весь `src/`, винести `wp-content/uploads` у окремий volume/бакет (або S3-сумісне сховище) для легшого масштабування.
 
-Приклад уривка сервісів (скорочено):
-```yaml
-services:
-  wordpress:
-    image: wordpress:6.6-php8.2-fpm
-    env_file: .env
-    volumes:
-      - ./src:/var/www/html
-      - ./docker/php/conf.d/custom.ini:/usr/local/etc/php/conf.d/custom.ini:ro
-    depends_on:
-      - db
-      - redis
-    healthcheck:
-      test: ["CMD", "php", "-v"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  nginx:
-    image: nginx:alpine
-    volumes:
-      - ./src:/var/www/html:ro
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
-    ports:
-      - "8000:80"
-    depends_on:
-      - wordpress
-
-  db:
-    image: mysql:8.0
-    env_file: .env
-    command: ["--default-authentication-plugin=mysql_native_password"]
-    volumes:
-      - store_db_data:/var/lib/mysql
-
-  redis:
-    image: redis:alpine
-    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
-
-volumes:
-  store_db_data:
-```
-
 ### WordPress конфіг (`src/wp-config.php`)
 - **ENV-орієнтована конфігурація**: додати/використати:
   - `WP_ENVIRONMENT_TYPE` = development/staging/production
@@ -128,8 +85,6 @@ opcache.revalidate_freq=2
 - **Компресія та WebP**: плагін для компресії (Imagify/ShortPixel/Smush) і автогенерацію WebP, якщо CDN/Nginx не робить перекодування.
 
 ### Тема `veldrin`
-- **Child theme і батьківські стилі**: у `style.css` зазначено `Template: twentytwentyfour` (блок-тема). Перевірити, чи потрібне підключення стилів батьківської теми (для блокових тем зазвичай керує `theme.json`). Якщо планується «класична» ієрархія — додати підключення parent-style.
-- **Theme supports**: додати `title-tag`, `html5`, `post-thumbnails`, `custom-logo` за потреби. WooCommerce підтримка вже є.
 - **Скрипти/стилі**: зараз використовується `filemtime` для версіонування — це добре. Перевірити залежності та умовне підключення (на сторінках без потреби — не вантажити зайве).
 
 ### WooCommerce

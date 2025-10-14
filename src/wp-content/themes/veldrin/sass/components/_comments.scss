@@ -1,0 +1,48 @@
+.comments-area {
+  margin-top: 2rem;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comment-list .comment {
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  padding: 1rem 0;
+}
+
+.comment .comment-author {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  font-weight: 600;
+}
+
+.comment .comment-meta {
+  font-size: .875rem;
+  color: #666;
+}
+
+.comment .comment-content {
+  margin-top: .5rem;
+}
+
+.comment-respond {
+  margin-top: 2rem;
+}
+
+.comment-respond .comment-reply-title {
+  margin-bottom: .5rem;
+}
+
+.comment-respond form p {
+  margin-bottom: .75rem;
+}
+
+.no-comments {
+  color: #666;
+}
+
+

@@ -2,6 +2,7 @@
 
 //dashboard customization (few lines for style)
 require 'admin/admin_customizations.php';
+require 'admin/security_hooks.php';
 
 function f_scripts_styles()
 {
@@ -27,6 +28,7 @@ add_action('wp_enqueue_scripts', 'f_scripts_styles');
 
 function custom_theme_setup() {
     add_theme_support('menus');
+    add_theme_support('title-tag');
 
     add_theme_support('woocommerce');
     // Enable product gallery features (optional but recommended)
@@ -34,12 +36,26 @@ function custom_theme_setup() {
     add_theme_support('wc-product-gallery-lightbox');
     add_theme_support('wc-product-gallery-slider');
 
-    register_nav_menu( 'header', __( 'Header menu', 'theme-slug' ) );
-    register_nav_menu( 'footer', __( 'Footer menu', 'theme-slug' ) );
-    register_nav_menu( 'footer_shop', __( 'Footer shop menu', 'theme-slug' ) );
-    register_nav_menu( 'bottom', __( 'Bottom menu', 'theme-slug' ) );
+    register_nav_menu( 'header', __( 'Header menu', 'Veldrin' ) );
+    register_nav_menu( 'footer', __( 'Footer menu', 'Veldrin' ) );
+    register_nav_menu( 'footer_shop', __( 'Footer shop menu', 'Veldrin' ) );
+    register_nav_menu( 'bottom', __( 'Bottom menu', 'Veldrin' ) );
 }
 add_action('after_setup_theme', 'custom_theme_setup');
+
+// Register sidebar(s)
+function veldrin_widgets_init() {
+    register_sidebar( array(
+        'name'          => __( 'Primary Sidebar', 'Veldrin' ),
+        'id'            => 'primary',
+        'description'   => __( 'Main sidebar that appears on the right.', 'Veldrin' ),
+        'before_widget' => '<section id="%1$s" class="widget %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h2 class="widget-title">',
+        'after_title'   => '</h2>',
+    ) );
+}
+add_action( 'widgets_init', 'veldrin_widgets_init' );
 
 /**
  * Simple image fallback system

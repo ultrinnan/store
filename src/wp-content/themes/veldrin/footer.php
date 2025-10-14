@@ -2,7 +2,7 @@
 ?>
 
 </main>
-<footer>
+<footer role="contentinfo">
   <div class="footer-container">
     <div class="footer-block">
       <h3>Veldrin Craftworks</h3>
@@ -17,18 +17,22 @@
       </div>
     </div>
     <div class="footer-block">
-        <?php wp_nav_menu([
-            'theme_location' => 'footer_shop',
-            'container' => false,
-            'menu_class' => 'footer-menu'
-        ]);?>
+        <nav aria-label="Shop footer menu">
+            <?php wp_nav_menu([
+                'theme_location' => 'footer_shop',
+                'container' => false,
+                'menu_class' => 'footer-menu'
+            ]);?>
+        </nav>
     </div>
     <div class="footer-block">
-        <?php wp_nav_menu([
-            'theme_location' => 'footer',
-            'container' => false,
-            'menu_class' => 'footer-menu'
-        ]);?>
+        <nav aria-label="Footer menu">
+            <?php wp_nav_menu([
+                'theme_location' => 'footer',
+                'container' => false,
+                'menu_class' => 'footer-menu'
+            ]);?>
+        </nav>
     </div>
     <div class="footer-block">
       <h4>Follow us!</h4>
@@ -42,11 +46,13 @@
         <?=date('Y');?> &copy; Veldrin Craftworks
     </div>
     <div class="copy-right">
-        <?php wp_nav_menu([
-            'theme_location' => 'bottom',
-            'container' => false,
-            'menu_class' => 'bottom-menu'
-        ]);?>
+        <nav aria-label="Bottom menu">
+            <?php wp_nav_menu([
+                'theme_location' => 'bottom',
+                'container' => false,
+                'menu_class' => 'bottom-menu'
+            ]);?>
+        </nav>
     </div>
   </div>
 </footer>
