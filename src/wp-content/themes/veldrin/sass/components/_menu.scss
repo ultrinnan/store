@@ -4,26 +4,6 @@
   display: none;
 }
 
-.menu_icon {
-  width: 20px;
-  height: 20px;
-  &.member {
-    background: url(image-url('/icons/user.svg')) center no-repeat;
-    background-size: cover;
-  }
-  &.support {
-    background: url(image-url('/icons/hand-holding-heart.svg')) center no-repeat;
-    background-size: cover;
-  }
-}
-.menu_title {
-  margin-top: 4px;
-  font-size: 10px;
-  color: $blue;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
 .header_menu {
   display: flex;
   flex-direction: row;
@@ -36,16 +16,15 @@
       align-items: center;
       a {
         display: block;
-        padding: 16px 24px;
+        padding: 8px 16px;
         text-transform: uppercase;
-        color: $blue;
+        color: $black;
+        text-decoration: none;
       }
       &:hover,
       &.current-menu-item {
-        background: $blue;
         a {
-          color: $yellow;
-          text-decoration: none;
+          font-weight: bold;
         }
       }
       &.menu-item-has-children {
@@ -54,14 +33,14 @@
         &:after {
           content: '';
           position: absolute;
-          top: 35%;
+          top: 24%;
           right: 32px;
           display: block;
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           border: 3px solid transparent;
-          border-right-color: $blue;
-          border-bottom-color: $blue;
+          border-right-color: $black;
+          border-bottom-color: $black;
           transform: rotate(45deg);
         }
         .sub-menu {
@@ -69,33 +48,38 @@
         }
         &.current-menu-item {
           &:after {
-            border-right-color: $yellow;
-            border-bottom-color: $yellow;
+            border-right-color: $black;
+            border-bottom-color: $black;
           }
         }
         &:hover {
           &:after {
-            border-right-color: $yellow;
-            border-bottom-color: $yellow;
+            border-right-color: $black;
+            border-bottom-color: $black;
           }
           .sub-menu {
             display: block;
             position: absolute;
-            z-index: 1;
+            z-index: 10;
             top: 100%;
-            background: white;
-            width: 100%;
-            box-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+            background: $white;
+            width: max-content;
+            min-width: 100px;
+            border: 1px solid rgba($gold, 0.5);
+            border-top: transparent;
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
             li {
               &:hover,
               &.current-menu-item {
                 a {
-                  color: $yellow;
+                  font-weight: bold;
+                  // color: $yellow;
                 }
               }
             }
             a {
-              color: $blue;
+              font-weight: normal;
+              // color: $blue;
             }
           }
         }
@@ -114,47 +98,6 @@
       &:hover {
         text-decoration: underline;
       }
-    }
-  }
-}
-
-.menu_search,
-.menu_support,
-.menu_member {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  cursor: pointer;
-  padding: 16px 24px;
-  position: relative;
-  .menu_icon {
-    background: url(image-url('/icons/search.svg')) center no-repeat;
-    background-size: cover;
-  }
-  .search_form {
-    display: none;
-  }
-  &.active {
-    .search_form {
-      display: block;
-    }
-  }
-  &:hover,
-  &.active {
-    background: $blue;
-    .menu_icon {
-      background: url(image-url('/icons/search_yellow.svg')) center no-repeat;
-      background-size: cover;
-    }
-    .menu_title {
-      color: $yellow;
-    }
-  }
-  &.active {
-    .menu_icon {
-      background: url(image-url('/icons/cross_yellow.svg')) center no-repeat;
-      background-size: cover;
     }
   }
 }
@@ -267,17 +210,10 @@
       }
     }
   }
-
-  .menu_search,
-  .menu_support,
-  .menu_member {
-    padding: 16px;
-  }
 }
 
 @media screen and (max-width: 768px) { // max-width: 768px
 }
 
 @media screen and (max-width: 590px) { // max-width: 590px
-
 }
