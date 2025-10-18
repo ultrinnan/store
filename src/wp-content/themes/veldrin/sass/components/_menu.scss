@@ -21,6 +21,40 @@
         color: $black;
         text-decoration: none;
       }
+      // Icon-only links for My Account and Cart
+      .menu-icon-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: relative;
+        padding: 8px 16px;
+        color: $black;
+        text-transform: none; // avoid uppercase around icons
+        .icon {
+          width: 24px;
+          height: 24px;
+          display: inline-block;
+        }
+      }
+      .menu-cart-link {
+        .cart-count {
+          position: absolute;
+          top: 4px;
+          right: 10px;
+          min-width: 18px;
+          height: 18px;
+          padding: 0 5px;
+          border-radius: 12px;
+          background: $gold;
+          color: $black;
+          font-size: 12px;
+          font-weight: bold;
+          line-height: 18px;
+          text-align: center;
+          box-shadow: 0 0 0 1px rgba($black, 0.1);
+        }
+      }
       &:hover,
       &.current-menu-item {
         a {
@@ -179,6 +213,22 @@
           padding: 16px 32px;
           font-size: 24px;
           color: white;
+        }
+        .menu-icon-link {
+          padding: 16px 32px;
+          color: white;
+          .icon {
+            width: 28px;
+            height: 28px;
+          }
+        }
+        .menu-cart-link {
+          .cart-count {
+            top: 10px;
+            right: 24px;
+            background: $yellow;
+            color: $black;
+          }
         }
         &.current-menu-item {
           > a {

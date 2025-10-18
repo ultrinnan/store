@@ -82,3 +82,128 @@ function simple_image_fallback($image, $attachment_id, $size, $icon) {
 
 // Apply fallback with high priority
 add_filter('wp_get_attachment_image_src', 'simple_image_fallback', 999, 4);
+
+// ----------------------------
+// Header menu icons (Account, Cart) with live cart count
+// ----------------------------
+if ( ! function_exists( 'veldrin_is_woocommerce_active' ) ) {
+    function veldrin_is_woocommerce_active() {
+        return class_exists( 'WooCommerce' );
+    }
+}
+
+if ( ! function_exists( 'veldrin_get_cart_count_markup' ) ) {
+    function veldrin_get_cart_count_markup() {
+        $count = 0;
+        if ( veldrin_is_woocommerce_active() && function_exists( 'WC' ) && WC()->cart ) {
+            $count = (int) WC()->cart->get_cart_contents_count();
+        }
+        // Using a dedicated class to target in Woo fragments
+        return '<span class="cart-count" data-cart-count>' . intval( $count ) . '</span>';
+    }
+}
+
+if ( ! function_exists( 'veldrin_get_cart_link_markup' ) ) {
+    function veldrin_get_cart_link_markup() {
+        $href = function_exists( 'wc_get_cart_url' ) ? esc_url( wc_get_cart_url() ) : '#';
+        $aria_label = esc_attr__( 'Cart', 'veldrin' );
+        $icon_svg = '<svg class="icon icon-cart" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM6.2 5l.31 2H21l-2 8H8l-.27-1.35L5.1 4H2V2h4a1 1 0 0 1 .98.8L8.2 11H18l1.2-4H6.51L6.2 5Z"/></svg>';
+        return '<a class="menu-icon-link menu-cart-link" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . veldrin_get_cart_count_markup() . '</a>';
+    }
+}
+
+// Replace specific header menu items with icons
+add_filter( 'walker_nav_menu_start_el', function( $item_output, $item, $depth, $args ) {
+    if ( empty( $args->theme_location ) || $args->theme_location !== 'header' ) {
+        return $item_output;
+    }
+    if ( ! veldrin_is_woocommerce_active() ) {
+        return $item_output;
+    }
+
+    $item_url = isset( $item->url ) ? $item->url : '';
+    $cart_url = function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : '';
+    $account_url = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'myaccount' ) : '';
+
+    $is_cart    = $cart_url && untrailingslashit( esc_url( $item_url ) ) === untrailingslashit( esc_url( $cart_url ) );
+    $is_account = $account_url && untrailingslashit( esc_url( $item_url ) ) === untrailingslashit( esc_url( $account_url ) );
+
+    // Allow partial match fallback by slug if direct match fails
+    if ( ! $is_cart && strpos( $item_url, 'cart' ) !== false ) {
+        $is_cart = true;
+    }
+    if ( ! $is_account && ( strpos( $item_url, 'my-account' ) !== false || strpos( $item_url, 'account' ) !== false ) ) {
+        $is_account = true;
+    }
+
+    if ( ! $is_cart && ! $is_account ) {
+        return $item_output;
+    }
+
+    // Build icon-only markup, preserving the original URL
+    $link_classes = 'menu-icon-link ' . ( $is_cart ? 'menu-cart-link' : 'menu-account-link' );
+    $aria_label   = $is_cart ? esc_attr__( 'Cart', 'veldrin' ) : esc_attr__( 'My account', 'veldrin' );
+    $href         = esc_url( $item_url );
+
+    // Inline SVG icons (kept minimal); fill uses currentColor
+    if ( $is_cart ) {
+        $icon_svg = '<svg class="icon icon-cart" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM6.2 5l.31 2H21l-2 8H8l-.27-1.35L5.1 4H2V2h4a1 1 0 0 1 .98.8L8.2 11H18l1.2-4H6.51L6.2 5Z"/></svg>';
+        $item_output = '<a class="' . esc_attr( $link_classes ) . '" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . veldrin_get_cart_count_markup() . '</a>';
+    } else {
+        $icon_svg = '<svg class="icon icon-user" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/></svg>';
+        $item_output = '<a class="' . esc_attr( $link_classes ) . '" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . '</a>';
+    }
+
+    return $item_output;
+}, 10, 4 );
+
+// WooCommerce fragments to live-update the cart count in header
+add_filter( 'woocommerce_add_to_cart_fragments', function( $fragments ) {
+    if ( ! veldrin_is_woocommerce_active() ) {
+        return $fragments;
+    }
+    // Replace the entire cart link to ensure consistent updates across pages
+    $fragments['a.menu-cart-link'] = veldrin_get_cart_link_markup();
+    // Also provide fine-grained count replacement if present
+    $fragments['.menu-cart-link .cart-count'] = veldrin_get_cart_count_markup();
+    return $fragments;
+} );
+
+// Also handle general cart fragment refreshes (e.g., on cart/checkout pages)
+add_filter( 'woocommerce_get_refreshed_fragments', function( $fragments ) {
+    if ( ! veldrin_is_woocommerce_active() ) {
+        return $fragments;
+    }
+    $fragments['a.menu-cart-link'] = veldrin_get_cart_link_markup();
+    $fragments['.menu-cart-link .cart-count'] = veldrin_get_cart_count_markup();
+    return $fragments;
+} );
+
+
+
+// Hide Cart menu item on the Cart page (header menu only)
+add_filter( 'wp_nav_menu_objects', function( $items, $args ) {
+    if ( empty( $args->theme_location ) || $args->theme_location !== 'header' ) {
+        return $items;
+    }
+    if ( ! veldrin_is_woocommerce_active() ) {
+        return $items;
+    }
+    if ( function_exists( 'is_cart' ) && is_cart() ) {
+        $cart_url = function_exists( 'wc_get_cart_url' ) ? wc_get_cart_url() : '';
+        foreach ( $items as $index => $item ) {
+            $url = isset( $item->url ) ? $item->url : '';
+            $is_cart_item = false;
+            if ( $cart_url ) {
+                $is_cart_item = untrailingslashit( esc_url( $url ) ) === untrailingslashit( esc_url( $cart_url ) );
+            }
+            if ( ! $is_cart_item && strpos( $url, 'cart' ) !== false ) {
+                $is_cart_item = true;
+            }
+            if ( $is_cart_item ) {
+                unset( $items[ $index ] );
+            }
+        }
+    }
+    return $items;
+}, 10, 2 );
