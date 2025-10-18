@@ -24,14 +24,19 @@
         <div class="header_logo">
             <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" class="site-logo-link" aria-label="<?php esc_attr_e( 'Veldrin home', 'veldrin' ); ?>"></a>
         </div>
-        <nav class="header_menu" aria-label="Primary">
-            <?php wp_nav_menu([
-                'theme_location' => 'header',
-                'container' => false,
-                'items_wrap' => '<ul id="%1$s" class="%2$s">%3$s</ul>',
-                'menu_class' => 'menu_list',
-                'fallback_cb' => 'wp_page_menu'
-            ]);?>
-        </nav>
+        <div class="menu_wrapper">
+            <nav class="header_menu" aria-label="Primary">
+                <?php wp_nav_menu([
+                    'theme_location' => 'header',
+                    'container' => false,
+                    'items_wrap' => '<ul id="%1$s" class="%2$s">%3$s</ul>',
+                    'menu_class' => 'menu_list',
+                    'fallback_cb' => 'wp_page_menu'
+                ]);?>
+            </nav>
+            <div class="header_search" role="search" aria-label="Site search">
+                <?php get_search_form(); ?>
+            </div>
+        </div>
     </header>
     <main id="content" role="main">
