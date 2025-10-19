@@ -13,45 +13,73 @@
   height: 40px;
   margin: 0 8px;
   border-radius: 50%;
+  // Use currentColor + mask so we can recolor on hover
+  color: $black;
   &:hover {
-    -webkit-box-shadow: 0 0 10px $yellow;
-    box-shadow: 0 0 10px $yellow;
+    color: $yellow; // icon color on hover
   }
   &.linkedin {
-    background: url(image-url('/icons/social/linkedin.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/linkedin.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/linkedin.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
   &.facebook {
-    background: url(image-url('/icons/social/facebook.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/facebook.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/facebook.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
   &.youtube {
-    background: url(image-url('/icons/social/youtube.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/youtube.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/youtube.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
   &.twitter {
-    background: url(image-url('/icons/social/twitter.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/twitter.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/twitter.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
   &.instagram {
-    background: url(image-url('/icons/social/instagram.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/instagram.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/instagram.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
   &.telegram {
-    background: url(image-url('/icons/social/telegram.svg')) center no-repeat;
-    background-size: contain;
+    background: none;
+    -webkit-mask: url(image-url('/icons/social/telegram.svg')) center no-repeat;
+    mask: url(image-url('/icons/social/telegram.svg')) center no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
   }
 }
 
-
-@media screen and (max-width: 1440px) { // max-width: 1440px
+@media screen and (max-width: 1440px) {
+  // max-width: 1440px
 }
 
-@media screen and (max-width: 1024px) { // max-width: 1024px
+@media screen and (max-width: 1024px) {
+  // max-width: 1024px
 }
 
-@media screen and (max-width: 768px) { // max-width: 768px
+@media screen and (max-width: 768px) {
+  // max-width: 768px
 }
 
-@media screen and (max-width: 590px) { // max-width: 590px
+@media screen and (max-width: 590px) {
+  // max-width: 590px
 }

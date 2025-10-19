@@ -38,8 +38,6 @@ function custom_theme_setup() {
 
     register_nav_menu( 'header', __( 'Header menu', 'Veldrin' ) );
     register_nav_menu( 'footer', __( 'Footer menu', 'Veldrin' ) );
-    register_nav_menu( 'footer_shop', __( 'Footer shop menu', 'Veldrin' ) );
-    register_nav_menu( 'bottom', __( 'Bottom menu', 'Veldrin' ) );
 }
 add_action('after_setup_theme', 'custom_theme_setup');
 

@@ -101,7 +101,7 @@
             min-width: 100px;
             border: 1px solid rgba($gold, 0.5);
             border-top: transparent;
-            box-shadow: 4px 4px 4px rgba(0,0,0,0.1);
+            box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.1);
             li {
               &:hover,
               &.current-menu-item {
@@ -126,20 +126,41 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+
   li {
     a {
       text-decoration: none;
+      color: $black;
+      display: block;
       &:hover {
+        color: $gold;
         text-decoration: underline;
       }
     }
+    ul li a {
+      margin-bottom: 16px;
+    }
+  }
+
+  > li > a {
+    display: block;
+    margin-bottom: 16px;
+    font-size: 16px;
+    color: $black;
+    font-family: $headerFont;
+    font-weight: normal;
   }
 }
 
-@media screen and (max-width: 1440px) { // max-width: 1440px
+@media screen and (max-width: 1440px) {
+  // max-width: 1440px
 }
 
-@media screen and (max-width: 1024px) { // max-width: 1024px
+@media screen and (max-width: 1024px) {
+  // max-width: 1024px
   .hamburger {
     display: flex;
     align-items: center;
@@ -262,8 +283,10 @@
   }
 }
 
-@media screen and (max-width: 768px) { // max-width: 768px
+@media screen and (max-width: 768px) {
+  // max-width: 768px
 }
 
-@media screen and (max-width: 590px) { // max-width: 590px
+@media screen and (max-width: 590px) {
+  // max-width: 590px
 }

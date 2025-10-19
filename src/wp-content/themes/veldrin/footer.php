@@ -5,27 +5,17 @@
 <footer role="contentinfo">
   <div class="footer-container">
     <div class="footer-block">
-      <h3>Veldrin Craftworks</h3>
+      <h4>Veldrin Craftworks</h4>
       <?php get_search_form(); ?>
       <div>We work with:</div>
       <div class="payment-methods">
         <img src="<?=get_template_directory_uri()?>/../veldrin/img/icons/Visa.svg" alt="Visa logo" loading="lazy">
         <img src="<?=get_template_directory_uri()?>/../veldrin/img/icons/Mastercard.svg" alt="Mastercard logo" loading="lazy">
-<!--        <img src="--><?php //=get_template_directory_uri()?><!--/../veldrin/img/icons/PayPal.svg" alt="PayPal logo" loading="lazy">-->
         <img src="<?=get_template_directory_uri()?>/../veldrin/img/icons/ApplePay.svg" alt="ApplePay logo" loading="lazy">
         <img src="<?=get_template_directory_uri()?>/../veldrin/img/icons/GooglePay.svg" alt="GooglePay logo" loading="lazy">
       </div>
     </div>
-    <div class="footer-block">
-        <nav aria-label="Shop footer menu">
-            <?php wp_nav_menu([
-                'theme_location' => 'footer_shop',
-                'container' => false,
-                'menu_class' => 'footer-menu'
-            ]);?>
-        </nav>
-    </div>
-    <div class="footer-block">
+    <div class="footer-block footer-menu-block">
         <nav aria-label="Footer menu">
             <?php wp_nav_menu([
                 'theme_location' => 'footer',
@@ -46,13 +36,7 @@
         <?=date('Y');?> &copy; Veldrin Craftworks
     </div>
     <div class="copy-right">
-        <nav aria-label="Bottom menu">
-            <?php wp_nav_menu([
-                'theme_location' => 'bottom',
-                'container' => false,
-                'menu_class' => 'bottom-menu'
-            ]);?>
-        </nav>
+      created by <a href="https://fedirko.pro" target="_blank">FEDIRKO.PRO</a>
     </div>
   </div>
 </footer>

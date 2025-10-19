@@ -1,9 +1,9 @@
 @use '../helpers/index' as *;
 
 footer {
-
   .footer-container {
-    max-width: 1200px;
+    max-width: 80%;
+    width: 80%;
     margin: auto;
     padding: 32px 0 0;
     display: flex;
@@ -11,6 +11,9 @@ footer {
     justify-content: space-between;
 
     .footer-block {
+      &.footer-menu-block {
+        width: 50%;
+      }
     }
 
     .payment-methods {
@@ -20,7 +23,7 @@ footer {
     }
   }
 
-  .copyright{
+  .copyright {
     width: 100%;
     display: flex;
     align-items: center;
@@ -32,6 +35,7 @@ footer {
     a {
       text-decoration: none;
       &:hover {
+        color: $gold;
         text-decoration: underline;
       }
     }
@@ -40,29 +44,24 @@ footer {
     }
     .copy-right {
       text-align: right;
-
-      .bottom-menu {
-        list-style: none;
-        display: flex;
-        gap: 24px;
-        //flex-direction: row;
-        li {
-        }
-      }
     }
   }
 }
 
-@media screen and (max-width: 1440px) { // max-width: 1440px
+@media screen and (max-width: 1440px) {
+  // max-width: 1440px
 }
 
-@media screen and (max-width: 1024px) { // max-width: 1024px
+@media screen and (max-width: 1024px) {
+  // max-width: 1024px
 }
 
-@media screen and (max-width: 768px) { // max-width: 768px
+@media screen and (max-width: 768px) {
+  // max-width: 768px
 }
 
-@media screen and (max-width: 590px) { // max-width: 590px
+@media screen and (max-width: 590px) {
+  // max-width: 590px
   .footer_social {
     flex-wrap: wrap;
   }

@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?php if ( ! has_site_icon() ) : ?>
     <link rel="icon" type="image/png" href="<?php echo esc_url( get_stylesheet_directory_uri() . '/img/logo_600.png' ); ?>">
-    <link rel="apple-touch-icon" href="<?php echo esc_url( get_stylesheet_directory_uri() . '/img/logo_1200.png' ); ?>">
+    <link rel="apple-touch-icon" href="<?php echo esc_url( get_stylesheet_directory_uri() . '/img/logo_600.png' ); ?>">
     <?php endif; ?>
     <?php wp_head(); ?>
 </head>
