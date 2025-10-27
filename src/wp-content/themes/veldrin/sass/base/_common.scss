@@ -62,12 +62,30 @@ section {
     padding: 40px 0;
 
     .content {
+      h2 {
+        margin: 40px 0 24px;
+      }
+
       p {
         line-height: 1.5;
         margin-bottom: 16px;
         &:last-of-type {
           margin-bottom: 0;
         }
+      }
+
+      ul {
+        margin-bottom: 16px;
+        li {
+          margin-bottom: 16px;
+          &:last-of-type {
+            margin-bottom: 0;
+          }
+        }
+      }
+
+      .wp-block-separator {
+        margin: 24px;
       }
     }
   }

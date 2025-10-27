@@ -2,7 +2,7 @@
 get_header();
 ?>
 <section>
-  <div class="container">
+  <div class="container index">
     <?php if ( have_posts() ) : ?>
       <?php while ( have_posts() ) : the_post(); ?>
         <article <?php post_class(); ?>>

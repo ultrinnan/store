@@ -210,12 +210,27 @@ section .container {
   margin: 0 auto;
   padding: 40px 0;
 }
+section .container .content h2 {
+  margin: 40px 0 24px;
+}
 section .container .content p {
   line-height: 1.5;
   margin-bottom: 16px;
 }
 section .container .content p:last-of-type {
   margin-bottom: 0;
+}
+section .container .content ul {
+  margin-bottom: 16px;
+}
+section .container .content ul li {
+  margin-bottom: 16px;
+}
+section .container .content ul li:last-of-type {
+  margin-bottom: 0;
+}
+section .container .content .wp-block-separator {
+  margin: 24px;
 }
 section:last-of-type .container {
   padding-bottom: 80px;
@@ -1054,4 +1069,86 @@ header .menu_wrapper {
   -webkit-mask-size: contain;
   mask-size: contain;
   background-color: currentColor;
+}
+
+.woocommerce .woocommerce-result-count {
+  margin-bottom: 40px;
+}
+.woocommerce .woocommerce-ordering {
+  margin-bottom: 40px;
+}
+.woocommerce .price {
+  margin-bottom: 32px;
+}
+.woocommerce .woocommerce-product-details__short-description {
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+.woocommerce form.cart {
+  display: flex;
+  align-items: center;
+}
+.woocommerce form.cart .quantity input {
+  font-size: 16px;
+  margin-right: 16px;
+  display: block;
+  padding: 8px 16px;
+  width: 5em;
+  border: 1px solid gray;
+  border-radius: 8px;
+  text-align: left;
+  height: 36px;
+}
+.woocommerce form.cart button.single_add_to_cart_button {
+  border: 1px solid gray;
+  border-radius: 8px;
+  height: 36px;
+  background-color: gray;
+}
+.woocommerce .product_meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.woocommerce .woocommerce-tabs .panel h2 {
+  margin-bottom: 24px;
+}
+.woocommerce .woocommerce-tabs .panel p {
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.woocommerce .woocommerce-tabs .panel p:last-of-type {
+  margin-bottom: 0;
+}
+.woocommerce .woocommerce-tabs .panel ul {
+  margin-bottom: 16px;
+}
+.woocommerce .woocommerce-tabs .panel ul li {
+  list-style: disc;
+  margin-left: 24px;
+  margin-bottom: 16px;
+}
+.woocommerce .related.products h2 {
+  margin: 32px 0 24px;
+}
+.woocommerce .related.products ul {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.woocommerce .related.products ul.products::before, .woocommerce .related.products ul.products::after {
+  display: none;
+}
+.woocommerce .related.products ul .product a img {
+  height: 350px;
+}
+
+.term-description {
+  text-align: center;
+  margin: -24px auto 40px;
+}
+
+.woocommerce-notices-wrapper {
+  margin: 20px 0 40px;
 }
