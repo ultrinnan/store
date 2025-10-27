@@ -25,23 +25,26 @@
           font-weight: bold;
         }
         .member_title {
-
         }
       }
     }
   }
 }
 
-@media screen and (max-width: 1440px) { // max-width: 1440px
+@media screen and (max-width: 1440px) {
+  // max-width: 1440px
 }
 
-@media screen and (max-width: 1024px) { // max-width: 1024px
+@media screen and (max-width: 1024px) {
+  // max-width: 1024px
 }
 
-@media screen and (max-width: 768px) { // max-width: 768px
+@media screen and (max-width: 768px) {
+  // max-width: 768px
 }
 
-@media screen and (max-width: 590px) { // max-width: 590px
+@media screen and (max-width: 590px) {
+  // max-width: 590px
   .about {
     .team_box {
       flex-direction: column;

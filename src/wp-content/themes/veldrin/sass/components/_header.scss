@@ -1,7 +1,7 @@
 @use '../helpers/index' as *;
 
 header {
-  padding: 0;
+  padding: 32px 0;
   width: 80%;
   transition: all 0.3s;
   display: flex;
@@ -13,7 +13,6 @@ header {
   .header_logo {
     display: flex;
     align-items: center;
-    padding: 20px 24px 16px;
     a {
       display: block;
       width: 150px;
@@ -31,16 +30,20 @@ header {
   }
 }
 
-@media screen and (max-width: 1440px) { // max-width: 1440px
+@media screen and (max-width: 1440px) {
+  // max-width: 1440px
 }
 
-@media screen and (max-width: 1024px) { // max-width: 1024px
+@media screen and (max-width: 1024px) {
+  // max-width: 1024px
 }
 
-@media screen and (max-width: 768px) { // max-width: 768px
+@media screen and (max-width: 768px) {
+  // max-width: 768px
 }
 
-@media screen and (max-width: 590px) { // max-width: 590px
+@media screen and (max-width: 590px) {
+  // max-width: 590px
   header {
     .header_logo {
       a {

@@ -14,19 +14,19 @@ Domain Path: /languages
 This theme, like WordPress, is licensed under the GPL.
 */
 
-.alignright{
-    float: right;
-    margin: 50px 0 50px 50px;
+.alignright {
+  float: right;
+  margin: 50px 0 50px 50px;
 }
 
 .alignleft {
-    float: left;
-    margin: 0 50px 50px 0;
+  float: left;
+  margin: 0 50px 50px 0;
 }
 
 .aligncenter {
-    display: block;
-    margin: 50px auto;
+  display: block;
+  margin: 50px auto;
 }
 
 .open-button {
@@ -35,4 +35,3 @@ This theme, like WordPress, is licensed under the GPL.
   border: 2px solid #ffcc00;
   border-radius: 30px;
 }
-
