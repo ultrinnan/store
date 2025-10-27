@@ -1,22 +1,10 @@
 @use '../helpers/index' as *;
 
-.error404 {
-  text-align: center;
-  &.head {
-    background: url(image-url('/bg/default.jpg')) center no-repeat;
-    background-size: cover;
-    min-height: 40vh;
-  }
-  .container {
-    h1 {
-      color: $yellow;
-      font-size: 100px;
-      margin: 32px auto;
-    }
-    h2 {
-      margin-bottom: 24px;
-    }
-  }
+.error-404 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 @media screen and (max-width: 1440px) {

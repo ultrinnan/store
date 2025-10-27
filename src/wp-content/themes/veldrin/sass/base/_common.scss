@@ -27,8 +27,9 @@ h4 {
 }
 
 h1 {
-  //font-size: 40px;
+  font-size: 40px;
   text-align: center;
+  margin-bottom: 40px;
 }
 h2 {
   //font-size: 32px;
@@ -59,10 +60,73 @@ section {
     max-width: 80%;
     margin: 0 auto;
     padding: 40px 0;
+
+    .content {
+      p {
+        line-height: 1.5;
+        margin-bottom: 16px;
+        &:last-of-type {
+          margin-bottom: 0;
+        }
+      }
+    }
   }
   &:last-of-type {
     .container {
       padding-bottom: 80px;
+    }
+  }
+}
+
+.post-navigation {
+  padding: 40px 0 0;
+  a {
+    color: $black;
+    text-decoration: none;
+    &:hover {
+      color: $gold;
+      text-decoration: underline;
+    }
+  }
+  .nav-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 48px;
+    .nav-previous {
+      position: relative;
+      text-transform: capitalize;
+      &:before {
+        position: absolute;
+        left: -24px;
+        top: 2px;
+        content: '';
+        display: block;
+        width: 16px;
+        height: 16px;
+        border: 3px solid transparent;
+        border-top-color: $gold;
+        border-right-color: $gold;
+        transform: rotate(-135deg);
+      }
+    }
+    .nav-next {
+      position: relative;
+      text-transform: capitalize;
+      &:after {
+        position: absolute;
+        right: -24px;
+        top: 2px;
+        content: '';
+        display: block;
+        width: 16px;
+        height: 16px;
+        border: 3px solid transparent;
+        border-top-color: $gold;
+        border-right-color: $gold;
+        transform: rotate(45deg);
+      }
     }
   }
 }

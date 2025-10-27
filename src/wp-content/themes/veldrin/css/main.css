@@ -192,7 +192,9 @@ h4 {
 }
 
 h1 {
+  font-size: 40px;
   text-align: center;
+  margin-bottom: 40px;
 }
 
 .hidden {
@@ -208,8 +210,68 @@ section .container {
   margin: 0 auto;
   padding: 40px 0;
 }
+section .container .content p {
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+section .container .content p:last-of-type {
+  margin-bottom: 0;
+}
 section:last-of-type .container {
   padding-bottom: 80px;
+}
+
+.post-navigation {
+  padding: 40px 0 0;
+}
+.post-navigation a {
+  color: #2e1f17;
+  text-decoration: none;
+}
+.post-navigation a:hover {
+  color: #ffcc00;
+  text-decoration: underline;
+}
+.post-navigation .nav-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  gap: 48px;
+}
+.post-navigation .nav-links .nav-previous {
+  position: relative;
+  text-transform: capitalize;
+}
+.post-navigation .nav-links .nav-previous:before {
+  position: absolute;
+  left: -24px;
+  top: 2px;
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid transparent;
+  border-top-color: #ffcc00;
+  border-right-color: #ffcc00;
+  transform: rotate(-135deg);
+}
+.post-navigation .nav-links .nav-next {
+  position: relative;
+  text-transform: capitalize;
+}
+.post-navigation .nav-links .nav-next:after {
+  position: absolute;
+  right: -24px;
+  top: 2px;
+  content: "";
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid transparent;
+  border-top-color: #ffcc00;
+  border-right-color: #ffcc00;
+  transform: rotate(45deg);
 }
 
 .debugger {
@@ -866,6 +928,13 @@ header .menu_wrapper {
 
 .widget ul li {
   padding: 0.25rem 0;
+}
+
+.error-404 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-hint {
