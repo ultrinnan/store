@@ -97,9 +97,7 @@ get_header(); ?>
 <!-- gen images here later -->
  <section>
 	<div class="container gen-block">
-		<div class="right-side">
-			<img src="https://veldrin.store/wp-content/uploads/2025/01/armour-painting.png" alt="">
-		</div>
+		<div class="right-side" style="background-image: url('https://veldrin.store/wp-content/uploads/2025/01/armour-painting.png');"></div>
 		<div class="left-side">
 			<h2 class="title">Unstoppable imagination</h2>
 			<p>From custom accessories to full armor sets or stunning costumes, we bring your wildest dreams to life with attention to details and true craftsmanship</p>
@@ -111,9 +109,7 @@ get_header(); ?>
 			<h2 class="title">Quality Materials</h2>
 			<p>We use only the highest-quality materials in our products, ensuring that they look great and last for years to come.</p>
 		</div>
-		<div class="right-side">
-			<img src="https://veldrin.store/wp-content/uploads/2025/01/leather-copy.png" alt="">
-		</div>
+		<div class="right-side" style="background-image: url('https://veldrin.store/wp-content/uploads/2025/01/leather-copy.png');"></div>
 	</div>
 </section>
 

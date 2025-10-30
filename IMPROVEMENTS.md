@@ -96,8 +96,24 @@ opcache.revalidate_freq=2
 ### Тема `veldrin`
 - **package.json**: Назва та опис вказують "uarchery" замість "veldrin" — варто оновити метадані проекту.
 - **Скрипти/стилі**: зараз використовується `filemtime` для версіонування — це добре. Перевірити залежності та умовне підключення (на сторінках без потреби — не вантажити зайве).
-- **JavaScript**: В даний момент лише один рядок `console.log('Veldrin ultrin!')` у `js/index.js` — підготувати структуру для модульного коду (якщо планується додавання функціоналу).
+- ~~**JavaScript**: В даний момент лише один рядок `console.log('Veldrin ultrin!')` у `js/index.js`~~ ✅ **ВИПРАВЛЕНО (2025-01-30)** - додано повну функціональність hamburger menu з keyboard accessibility
 - **Sass структура**: Добре організована (base/components/helpers) але відсутні коментарі та документація у компонентах.
+
+#### ✅ Нещодавні покращення безпеки та accessibility (2025-01-30)
+1. **SVG Security Hardening**
+   - Додано `wp_kses` sanitization для всіх SVG іконок в `functions.php`
+   - Захист від XSS атак через скомпрометовані SVG файли
+   - Whitelist безпечних SVG тегів та атрибутів
+
+2. **Keyboard Accessibility**
+   - Hamburger menu тепер `<button>` замість `<div>`
+   - Повна клавіатурна підтримка: Enter, Space, Escape
+   - Динамічне оновлення `aria-expanded` атрибуту
+   - ARIA labels для screen readers
+
+3. **Production Readiness**
+   - Видалено `console.log()` з JavaScript
+   - Рефакторинг коду для кращої структури (toggleMenu/closeMenu функції)
 
 ### WooCommerce
 - **Крон і планувальник**: переконатися, що працює `Action Scheduler` (критично для WC). Використовувати системний cron у проді.
@@ -137,10 +153,11 @@ opcache.revalidate_freq=2
 #### Тема Veldrin
 1. **WooCommerce templates**: Немає кастомних overrides WooCommerce шаблонів у `veldrin/woocommerce/` — якщо потрібна кастомізація, створити
 2. **Theme metadata**: `style.css` містить коректну інформацію про тему, але `package.json` має застарілі дані
-3. **Accessibility**: Є гарна робота з ARIA labels але варто провести повний аудит (WCAG 2.1 AA)
-4. **Mobile menu**: Є `.hamburger` клас у header але немає відповідної JS логіки — перевірити функціональність
+3. ~~**Accessibility**: Є гарна робота з ARIA labels але варто провести повний аудит~~ ✅ **ПОКРАЩЕНО (2025-01-30)** - додано keyboard accessibility, hamburger тепер `<button>` з ARIA. Залишається: повний WCAG 2.1 AA аудит
+4. ~~**Mobile menu**: Є `.hamburger` клас у header але немає відповідної JS логіки**~~ ✅ **ВИПРАВЛЕНО (2025-01-30)** - повна функціональність з keyboard support
 5. **Favicon handling**: Перевірити чи існує `img/logo_600.png` або налаштувати через WordPress Site Icon
 6. **Internationalization**: Частково реалізовано `__()` але не всі рядки обгорнуті — завершити i18n
+7. ~~**SVG Security**: Немає sanitization для SVG іконок~~ ✅ **ВИПРАВЛЕНО (2025-01-30)** - додано wp_kses sanitization
 
 #### Performance
 1. **Assets загрузка**:

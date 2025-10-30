@@ -17,11 +17,11 @@
     <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', 'veldrin' ); ?></a>
     <header>
         <div class="header_top">
-            <div class="hamburger">
+            <button class="hamburger" aria-label="<?php esc_attr_e( 'Toggle menu', 'veldrin' ); ?>" aria-expanded="false" aria-controls="primary-menu">
                 <span></span>
                 <span></span>
                 <span></span>
-            </div>
+            </button>
             <div class="header_logo">
                 <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" class="site-logo-link" aria-label="<?php esc_attr_e( 'Veldrin home', 'veldrin' ); ?>"></a>
             </div>

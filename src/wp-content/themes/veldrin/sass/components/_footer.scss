@@ -70,11 +70,54 @@ footer {
 }
 
 @media screen and (max-width: 768px) {
-  // max-width: 768px
+  footer {
+    .footer-container {
+      width: 95%;
+      max-width: 95%;
+      padding: 24px 0 0;
+
+      .footer-block {
+        text-align: center;
+
+        h4 {
+          font-size: 24px;
+        }
+      }
+
+      .payment-methods {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        img {
+          width: 50px;
+        }
+      }
+    }
+
+    .copyright {
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px;
+
+      .copy-left,
+      .copy-right {
+        text-align: center;
+      }
+    }
+  }
 }
 
 @media screen and (max-width: 590px) {
-  // max-width: 590px
+  footer {
+    .footer-container {
+      .payment-methods img {
+        width: 45px;
+      }
+    }
+  }
+
   .footer_social {
     flex-wrap: wrap;
   }

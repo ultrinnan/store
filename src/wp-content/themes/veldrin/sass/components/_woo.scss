@@ -82,16 +82,67 @@
     ul {
       display: flex;
       flex-direction: row;
+      flex-wrap: wrap;
       align-items: flex-start;
-      justify-content: space-between;
+      justify-content: center;
+      gap: 24px;
       &.products::before,
       &.products::after {
         display: none;
       }
 
       .product {
+        flex: 0 0 calc(25% - 18px);
+        min-width: 200px;
+        max-width: 280px;
+
         a img {
-          height: 350px;
+          width: 100%;
+          height: auto;
+          max-height: 350px;
+          object-fit: cover;
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 1024px) {
+    .related.products ul .product {
+      flex: 0 0 calc(33.333% - 16px);
+    }
+  }
+
+  @media screen and (max-width: 768px) {
+    .related.products {
+      h2 {
+        margin: 24px 0 16px;
+        font-size: 32px;
+      }
+
+      ul {
+        gap: 16px;
+
+        .product {
+          flex: 0 0 calc(50% - 8px);
+          min-width: 150px;
+        }
+      }
+    }
+  }
+
+  @media screen and (max-width: 590px) {
+    .related.products {
+      h2 {
+        font-size: 28px;
+      }
+
+      ul {
+        gap: 12px;
+
+        .product {
+          flex: 0 0 100%;
+          max-width: 280px;
+          margin: 0 auto;
         }
       }
     }
@@ -112,4 +163,61 @@
 
 .woocommerce-notices-wrapper {
   margin: 20px 0 40px;
+}
+
+// General WooCommerce Mobile Styles
+@media screen and (max-width: 768px) {
+  .woocommerce {
+    // Single product mobile
+    form.cart {
+      flex-wrap: wrap;
+      gap: 16px;
+
+      .quantity {
+        width: 100%;
+
+        input {
+          width: 100%;
+          margin-right: 0;
+        }
+      }
+
+      button.single_add_to_cart_button {
+        width: 100%;
+        height: 44px; // Better touch target
+      }
+    }
+
+    // Make tables responsive
+    table.shop_table {
+      font-size: 14px;
+
+      th, td {
+        padding: 8px 4px;
+      }
+    }
+
+    // Product grid on shop/archive
+    ul.products {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
+
+      li.product {
+        flex: 0 0 calc(50% - 8px);
+        min-width: 150px;
+        max-width: 200px;
+      }
+    }
+  }
+}
+
+@media screen and (max-width: 590px) {
+  .woocommerce {
+    ul.products li.product {
+      flex: 0 0 100%;
+      max-width: 280px;
+    }
+  }
 }

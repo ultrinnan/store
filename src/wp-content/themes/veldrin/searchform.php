@@ -5,6 +5,5 @@
   </label>
   <button type="submit" class="search-button">
     <span class="search_button_icon"></span>
-    <span class="search_button_text">Search</span>
   </button>
 </form>

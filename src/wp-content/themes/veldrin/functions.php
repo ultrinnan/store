@@ -92,22 +92,68 @@ if ( ! function_exists( 'veldrin_is_woocommerce_active' ) ) {
 
 if ( ! function_exists( 'veldrin_get_icon_svg' ) ) {
     /**
-     * Get inline SVG icon from file
+     * Get inline SVG icon from file with sanitization
      *
      * @param string $icon_name Icon filename without extension (e.g., 'icon-user', 'icon-cart')
-     * @return string SVG markup or empty string if file not found
+     * @return string Sanitized SVG markup or empty string if file not found
      */
     function veldrin_get_icon_svg( $icon_name ) {
         $icon_path = get_template_directory() . '/img/icons/' . $icon_name . '.svg';
 
+        // Define allowed SVG tags and attributes for security
+        $allowed_svg = array(
+            'svg' => array(
+                'class' => true,
+                'width' => true,
+                'height' => true,
+                'viewBox' => true,
+                'viewbox' => true,
+                'aria-hidden' => true,
+                'focusable' => true,
+                'xmlns' => true,
+                'fill' => true,
+                'stroke' => true,
+            ),
+            'path' => array(
+                'fill' => true,
+                'd' => true,
+                'stroke' => true,
+                'stroke-width' => true,
+                'stroke-linecap' => true,
+                'stroke-linejoin' => true,
+            ),
+            'circle' => array(
+                'cx' => true,
+                'cy' => true,
+                'r' => true,
+                'fill' => true,
+                'stroke' => true,
+            ),
+            'rect' => array(
+                'x' => true,
+                'y' => true,
+                'width' => true,
+                'height' => true,
+                'fill' => true,
+                'stroke' => true,
+                'rx' => true,
+                'ry' => true,
+            ),
+            'g' => array(
+                'fill' => true,
+                'stroke' => true,
+            ),
+        );
+
         if ( file_exists( $icon_path ) ) {
             $svg_content = file_get_contents( $icon_path );
             if ( $svg_content !== false ) {
-                return $svg_content;
+                // Sanitize SVG content to prevent XSS attacks
+                return wp_kses( $svg_content, $allowed_svg );
             }
         }
 
-        // Fallback inline SVG if file not found
+        // Fallback inline SVG if file not found (already sanitized)
         if ( $icon_name === 'icon-user' ) {
             return '<svg class="icon icon-user" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/></svg>';
         } elseif ( $icon_name === 'icon-cart' ) {
