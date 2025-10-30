@@ -45,7 +45,7 @@
 
 <?php
 if (defined('WP_DEBUG') && WP_DEBUG === true) {
-    echo '<div class="debugger">debug mode ON</div>';
+    echo '<div class="debugger">debug mode ON, '. WP_TEST .'</div>';
 }
 ?>
 

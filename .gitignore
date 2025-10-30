@@ -7,7 +7,7 @@
 src/wp-admin/
 src/wp-includes/
 src/wp-*.php
-src/wp-config.php
+# src/wp-config.php - NOW TRACKED (all secrets in ENV)
 src/license.txt
 src/readme.html
 src/xmlrpc.php
