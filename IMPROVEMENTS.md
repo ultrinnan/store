@@ -2,6 +2,15 @@
 
 Нижче — пріоритезований список покращень для Docker-оточення, WordPress-конфігурації та теми `veldrin`. Акцент на продуктивність, безпеку, стабільність та розробницький DX.
 
+**Стан проекту (поточний):**
+- ✅ Docker середовище налаштовано (MySQL 5.7 + WordPress PHP 8.3 Apache)
+- ✅ Тема Veldrin з підтримкою WooCommerce
+- ✅ Gulp build система (Sass + esbuild + LiveReload)
+- ✅ Оптимізація зображень (2GB uploads, покращено з 55K+ файлів)
+- ⚠️ Hardcoded security keys у `wp-config.php` (критично для продакшену)
+- ⚠️ Застарілий MySQL 5.7 (підтримка закінчилася у 2023)
+- ⚠️ Відсутній окремий `docker-compose.prod.yml`
+
 ### Швидкі перемоги (1–2 години)
 - **Секретні ключі та соли**: зараз є хардкод у `wp-config.php`. Винести всі значення у `.env` і прибрати дефолти. Згенерувати нові ключі (`curl -s https://api.wordpress.org/secret-key/1.1/salt/`).
 - **Оновити MySQL**: `mysql:5.7` застарілий. Перейти на `mysql:8.0` або `mariadb:10.6+` (перевірити сумісність).
@@ -85,7 +94,10 @@ opcache.revalidate_freq=2
 - **Компресія та WebP**: плагін для компресії (Imagify/ShortPixel/Smush) і автогенерацію WebP, якщо CDN/Nginx не робить перекодування.
 
 ### Тема `veldrin`
+- **package.json**: Назва та опис вказують "uarchery" замість "veldrin" — варто оновити метадані проекту.
 - **Скрипти/стилі**: зараз використовується `filemtime` для версіонування — це добре. Перевірити залежності та умовне підключення (на сторінках без потреби — не вантажити зайве).
+- **JavaScript**: В даний момент лише один рядок `console.log('Veldrin ultrin!')` у `js/index.js` — підготувати структуру для модульного коду (якщо планується додавання функціоналу).
+- **Sass структура**: Добре організована (base/components/helpers) але відсутні коментарі та документація у компонентах.
 
 ### WooCommerce
 - **Крон і планувальник**: переконатися, що працює `Action Scheduler` (критично для WC). Використовувати системний cron у проді.
@@ -101,7 +113,42 @@ opcache.revalidate_freq=2
 
 ### Моніторинг і спостережність
 - **Логи**: ротація логів PHP/NGINX, окремі volume для логів, централізований збір (ELK/Vector+Loki/Grafana, за потреби).
+- **Debug log**: В даний момент `debug.log` порожній (0 bytes) — добре для перформансу, але варто моніторити у проді.
 - **Профілювання**: «Query Monitor» у dev/stage (не у проді), `New Relic`/`Blackfire` для глибокого профілювання.
+
+### Додаткові рекомендації (виявлені під час аналізу)
+
+#### Docker та інфраструктура
+1. **Відсутній `.dockerignore`**: створити файл для виключення непотрібних файлів при білдах
+2. **External network "proxy"**: Docker compose використовує зовнішню мережу `proxy` (ймовірно для Traefik) — документувати це у README
+3. **Platform lock**: `platform: linux/x86_64` для MySQL може бути проблемою на ARM Mac — розглянути умовне визначення
+4. **Container naming**: Контейнери мають різні імена (`veldrin` та `veldrin-db`) — варто узгодити паттерн
+
+#### Безпека та конфігурація
+1. **wp-config.php hardcoded keys**: КРИТИЧНО! Замінити усі дефолтні ключі на читання з ENV:
+   ```php
+   define('AUTH_KEY', getenv_docker('WORDPRESS_AUTH_KEY', ''));
+   define('SECURE_AUTH_KEY', getenv_docker('WORDPRESS_SECURE_AUTH_KEY', ''));
+   // і т.д. — БЕЗ fallback значень у проді
+   ```
+2. **WORDPRESS_CONFIG_EXTRA**: У `wp-config.php` є `eval($configExtra)` — потенційна вразливість якщо ENV заповнений зловмисником
+3. **Missing security headers**: Додати у конфігурацію веб-сервера (X-Frame-Options, X-Content-Type-Options, CSP)
+
+#### Тема Veldrin
+1. **WooCommerce templates**: Немає кастомних overrides WooCommerce шаблонів у `veldrin/woocommerce/` — якщо потрібна кастомізація, створити
+2. **Theme metadata**: `style.css` містить коректну інформацію про тему, але `package.json` має застарілі дані
+3. **Accessibility**: Є гарна робота з ARIA labels але варто провести повний аудит (WCAG 2.1 AA)
+4. **Mobile menu**: Є `.hamburger` клас у header але немає відповідної JS логіки — перевірити функціональність
+5. **Favicon handling**: Перевірити чи існує `img/logo_600.png` або налаштувати через WordPress Site Icon
+6. **Internationalization**: Частково реалізовано `__()` але не всі рядки обгорнуті — завершити i18n
+
+#### Performance
+1. **Assets загрузка**:
+   - jQuery завантажується для `main.min.js` але не використовується у `index.js`
+   - Розглянути видалення залежності від jQuery
+2. **CSS sourcemaps**: Генеруються навіть для production build — додати умовне генерування
+3. **Image lazy loading**: Немає нативного `loading="lazy"` у шаблонах
+4. **No CDN configuration**: Розглянути інтеграцію з CDN для статичних ресурсів
 
 ### Прод-крон (приклад)
 ```bash

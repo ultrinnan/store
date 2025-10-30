@@ -16,13 +16,35 @@
 <?php wp_body_open(); ?>
     <a class="skip-link screen-reader-text" href="#content"><?php esc_html_e( 'Skip to content', 'veldrin' ); ?></a>
     <header>
-        <div class="hamburger">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-        <div class="header_logo">
-            <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" class="site-logo-link" aria-label="<?php esc_attr_e( 'Veldrin home', 'veldrin' ); ?>"></a>
+        <div class="header_top">
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="header_logo">
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" class="site-logo-link" aria-label="<?php esc_attr_e( 'Veldrin home', 'veldrin' ); ?>"></a>
+            </div>
+            <div class="header_icons">
+                <?php
+                // User account icon
+                if (function_exists('wc_get_page_id') && function_exists('veldrin_get_icon_svg')) {
+                    $myaccount_page_id = get_option('woocommerce_myaccount_page_id');
+                    if ($myaccount_page_id) {
+                        $myaccount_url = get_permalink($myaccount_page_id);
+                        $user_icon_svg = veldrin_get_icon_svg('icon-user');
+                        echo '<a href="' . esc_url($myaccount_url) . '" class="header-icon-link menu-icon-link menu-account-link" aria-label="' . esc_attr__('My Account', 'veldrin') . '">';
+                        echo $user_icon_svg;
+                        echo '</a>';
+                    }
+                }
+
+                // Cart icon with count - use helper function for consistency
+                if (function_exists('veldrin_get_cart_link_markup')) {
+                    echo veldrin_get_cart_link_markup();
+                }
+                ?>
+            </div>
         </div>
         <div class="menu_wrapper">
             <nav class="header_menu" aria-label="Primary">

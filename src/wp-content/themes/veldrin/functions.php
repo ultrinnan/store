@@ -90,14 +90,45 @@ if ( ! function_exists( 'veldrin_is_woocommerce_active' ) ) {
     }
 }
 
+if ( ! function_exists( 'veldrin_get_icon_svg' ) ) {
+    /**
+     * Get inline SVG icon from file
+     *
+     * @param string $icon_name Icon filename without extension (e.g., 'icon-user', 'icon-cart')
+     * @return string SVG markup or empty string if file not found
+     */
+    function veldrin_get_icon_svg( $icon_name ) {
+        $icon_path = get_template_directory() . '/img/icons/' . $icon_name . '.svg';
+
+        if ( file_exists( $icon_path ) ) {
+            $svg_content = file_get_contents( $icon_path );
+            if ( $svg_content !== false ) {
+                return $svg_content;
+            }
+        }
+
+        // Fallback inline SVG if file not found
+        if ( $icon_name === 'icon-user' ) {
+            return '<svg class="icon icon-user" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/></svg>';
+        } elseif ( $icon_name === 'icon-cart' ) {
+            return '<svg class="icon icon-cart" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM6.2 5l.31 2H21l-2 8H8l-.27-1.35L5.1 4H2V2h4a1 1 0 0 1 .98.8L8.2 11H18l1.2-4H6.51L6.2 5Z"/></svg>';
+        }
+
+        return '';
+    }
+}
+
 if ( ! function_exists( 'veldrin_get_cart_count_markup' ) ) {
     function veldrin_get_cart_count_markup() {
         $count = 0;
         if ( veldrin_is_woocommerce_active() && function_exists( 'WC' ) && WC()->cart ) {
             $count = (int) WC()->cart->get_cart_contents_count();
         }
-        // Using a dedicated class to target in Woo fragments
-        return '<span class="cart-count" data-cart-count>' . intval( $count ) . '</span>';
+        // Only show badge if count > 0
+        if ( $count > 0 ) {
+            return '<span class="cart-count" data-cart-count>' . intval( $count ) . '</span>';
+        }
+        return '';
     }
 }
 
@@ -105,8 +136,8 @@ if ( ! function_exists( 'veldrin_get_cart_link_markup' ) ) {
     function veldrin_get_cart_link_markup() {
         $href = function_exists( 'wc_get_cart_url' ) ? esc_url( wc_get_cart_url() ) : '#';
         $aria_label = esc_attr__( 'Cart', 'veldrin' );
-        $icon_svg = '<svg class="icon icon-cart" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM6.2 5l.31 2H21l-2 8H8l-.27-1.35L5.1 4H2V2h4a1 1 0 0 1 .98.8L8.2 11H18l1.2-4H6.51L6.2 5Z"/></svg>';
-        return '<a class="menu-icon-link menu-cart-link" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . veldrin_get_cart_count_markup() . '</a>';
+        $icon_svg = veldrin_get_icon_svg( 'icon-cart' );
+        return '<a class="header-icon-link menu-icon-link menu-cart-link" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . veldrin_get_cart_count_markup() . '</a>';
     }
 }
 
@@ -143,12 +174,12 @@ add_filter( 'walker_nav_menu_start_el', function( $item_output, $item, $depth, $
     $aria_label   = $is_cart ? esc_attr__( 'Cart', 'veldrin' ) : esc_attr__( 'My account', 'veldrin' );
     $href         = esc_url( $item_url );
 
-    // Inline SVG icons (kept minimal); fill uses currentColor
+    // Load SVG icons from files
     if ( $is_cart ) {
-        $icon_svg = '<svg class="icon icon-cart" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 .001 4.001A2 2 0 0 0 17 18ZM6.2 5l.31 2H21l-2 8H8l-.27-1.35L5.1 4H2V2h4a1 1 0 0 1 .98.8L8.2 11H18l1.2-4H6.51L6.2 5Z"/></svg>';
+        $icon_svg = veldrin_get_icon_svg( 'icon-cart' );
         $item_output = '<a class="' . esc_attr( $link_classes ) . '" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . veldrin_get_cart_count_markup() . '</a>';
     } else {
-        $icon_svg = '<svg class="icon icon-user" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.33 0-8 2.17-8 5v1h16v-1c0-2.83-3.67-5-8-5Z"/></svg>';
+        $icon_svg = veldrin_get_icon_svg( 'icon-user' );
         $item_output = '<a class="' . esc_attr( $link_classes ) . '" href="' . $href . '" aria-label="' . $aria_label . '">' . $icon_svg . '</a>';
     }
 

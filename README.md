@@ -6,16 +6,20 @@ WordPress-based e-commerce store with optimized image handling and production-re
 
 ```
 store/
-├── src/                    # WordPress files (for production)
-│   ├── wp-admin/
-│   ├── wp-content/
-│   ├── wp-includes/
-│   └── wp-*.php
-├── docker-compose.yml      # Development environment
-├── docker-compose.dev.yml  # Legacy development config
-├── docker-compose.prod.yml # Production environment
+├── src/                    # WordPress installation root
+│   ├── wp-admin/           # WordPress admin (gitignored)
+│   ├── wp-content/         # Content directory
+│   │   └── themes/
+│   │       └── veldrin/    # Custom Veldrin theme (tracked in git)
+│   ├── wp-includes/        # WordPress core (gitignored)
+│   ├── wp-config.php       # WordPress config (gitignored, auto-generated)
+│   └── wp-*.php            # WordPress core files (gitignored)
+├── docker-compose.yml      # Development environment (current)
+├── docker-compose.override.yml # Local Docker overrides
 ├── .env                    # Environment variables (create from .env.example)
-└── README.md
+├── .env.example            # Environment template
+├── README.md               # Project documentation
+└── IMPROVEMENTS.md         # Technical improvement roadmap
 ```
 
 ## 🚀 Quick Start (Development)
@@ -52,6 +56,8 @@ store/
 
 ## 🏭 Production Deployment
 
+**Note:** A dedicated `docker-compose.prod.yml` file is planned but not yet implemented. Current production deployment uses the main `docker-compose.yml` with production-specific environment variables.
+
 1. **Prepare environment:**
    ```bash
    cp .env.example .env
@@ -61,37 +67,68 @@ store/
 2. **Generate WordPress security keys:**
    ```bash
    curl -s https://api.wordpress.org/secret-key/1.1/salt/
+   # Copy the generated keys to your .env file
    ```
 
-3. **Deploy with production config:**
+3. **Update WordPress debug settings in .env:**
    ```bash
-   docker-compose -f docker-compose.prod.yml up -d
+   WORDPRESS_DEBUG=false
+   WORDPRESS_DEBUG_LOG=false
+   WORDPRESS_DEBUG_DISPLAY=false
+   WP_ENVIRONMENT_TYPE=production
+   ```
+
+4. **Build theme assets:**
+   ```bash
+   cd src/wp-content/themes/veldrin
+   pnpm install
+   pnpm run build
+   ```
+
+5. **Deploy with Docker:**
+   ```bash
+   docker-compose up -d
    ```
 
 ## 🔧 Configuration
 
 ### Environment Variables (.env)
 
+Create a `.env` file from `.env.example`:
+
 ```bash
 # Database
 MYSQL_ROOT_PASSWORD=your_secure_root_password
-MYSQL_DATABASE=veldrin
-MYSQL_USER=veldrin
+MYSQL_DATABASE=your_database_name
+MYSQL_USER=your_database_user
 MYSQL_PASSWORD=your_secure_db_password
 
-# WordPress
+# WordPress Database Connection
 WORDPRESS_DB_HOST=db
-WORDPRESS_DB_USER=veldrin
+WORDPRESS_DB_USER=your_database_user
 WORDPRESS_DB_PASSWORD=your_secure_db_password
-WORDPRESS_DB_NAME=veldrin
-WORDPRESS_DEBUG=false
-WORDPRESS_DEBUG_LOG=false
+WORDPRESS_DB_NAME=your_database_name
 
-# Security Keys (generate new ones)
-WORDPRESS_AUTH_KEY=your_auth_key_here
-WORDPRESS_SECURE_AUTH_KEY=your_secure_auth_key_here
-# ... (other security keys)
+# WordPress Debug Settings
+WORDPRESS_DEBUG=true              # Set to false in production
+WORDPRESS_DEBUG_LOG=true          # Set to false in production
+WORDPRESS_DEBUG_DISPLAY=true      # Set to false in production
+
+# Environment Type
+WP_ENVIRONMENT_TYPE=development   # Options: development, staging, production
+
+# Security Keys (generate new ones for production)
+WORDPRESS_AUTH_KEY=generate_unique_key_here
+WORDPRESS_SECURE_AUTH_KEY=generate_unique_key_here
+WORDPRESS_LOGGED_IN_KEY=generate_unique_key_here
+WORDPRESS_NONCE_KEY=generate_unique_key_here
+WORDPRESS_AUTH_SALT=generate_unique_salt_here
+WORDPRESS_SECURE_AUTH_SALT=generate_unique_salt_here
+WORDPRESS_LOGGED_IN_SALT=generate_unique_salt_here
+WORDPRESS_NONCE_SALT=generate_unique_salt_here
 ```
+
+**⚠️ IMPORTANT**: The `wp-config.php` currently has hardcoded fallback security keys. These MUST be replaced with unique keys from environment variables before production deployment.
 
 ## 📊 Optimization Features
 
@@ -102,6 +139,7 @@ WORDPRESS_SECURE_AUTH_KEY=your_secure_auth_key_here
 
 ## 🛠️ Development Commands
 
+### Docker Commands
 ```bash
 # Start development environment
 docker-compose up -d
@@ -109,14 +147,27 @@ docker-compose up -d
 # Stop services
 docker-compose down
 
-# View logs
+# View logs (all services)
 docker-compose logs -f
 
-# Access database
-docker exec -it veldrin-db-dev mysql -u store -pstore store
+# View logs (specific service)
+docker-compose logs -f wordpress
+docker-compose logs -f db
+
+# Access database (container name: veldrin-db)
+docker exec -it veldrin-db mysql -u [DB_USER] -p[DB_PASSWORD] [DB_NAME]
 
 # Backup database
-docker exec veldrin-db-dev mysqldump -u store -pstore store > backup.sql
+docker exec veldrin-db mysqldump -u [DB_USER] -p[DB_PASSWORD] [DB_NAME] > backup_$(date +%Y%m%d).sql
+
+# Restore database
+docker exec -i veldrin-db mysql -u [DB_USER] -p[DB_PASSWORD] [DB_NAME] < backup.sql
+
+# Restart containers
+docker-compose restart
+
+# Check container status
+docker ps --filter "name=veldrin"
 ```
 
 ### Theme Development (Gulp + LiveReload)

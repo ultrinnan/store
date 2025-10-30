@@ -3,7 +3,7 @@ get_header();
 ?>
 <section>
   <div class="container">
-    <h1><?php printf( esc_html__( 'Search results for: %s', 'Veldrin' ), '<span>' . get_search_query() . '</span>' ); ?></h1>
+    <h1><?php printf( esc_html__( 'Search results for: %s', 'Veldrin' ), '<span>"' . get_search_query() . '"</span>' ); ?></h1>
 
     <?php if ( have_posts() ) : ?>
       <?php while ( have_posts() ) : the_post(); ?>
@@ -18,8 +18,7 @@ get_header();
       <?php endwhile; ?>
       <?php the_posts_navigation(); ?>
     <?php else : ?>
-      <p><?php esc_html_e( 'No results found.', 'Veldrin' ); ?></p>
-      <?php get_search_form(); ?>
+      <p><?php esc_html_e( 'No results found. Maybe try another search?', 'Veldrin' ); ?></p>
     <?php endif; ?>
   </div>
 </section>

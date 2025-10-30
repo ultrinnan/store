@@ -4,6 +4,13 @@
   //box-sizing: border-box;
 }
 
+// WordPress admin bar fix - force fixed position on mobile
+#wpadminbar {
+  position: fixed !important;
+  z-index: 50;
+  top: 0 !important;
+}
+
 body {
   background: $white;
   color: $black;
