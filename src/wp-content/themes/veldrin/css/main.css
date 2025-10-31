@@ -816,8 +816,7 @@ footer .copyright .copy-right {
 }
 @media screen and (max-width: 768px) {
   footer .footer-container {
-    width: 95%;
-    max-width: 95%;
+    max-width: 80%;
     padding: 24px 0 0;
   }
   footer .footer-container .footer-block {
@@ -1234,6 +1233,7 @@ header .menu_wrapper {
   .footer-menu {
     justify-content: space-between;
     gap: 24px;
+    text-align: left;
   }
 }
 .comments-area {
@@ -1330,6 +1330,7 @@ header .menu_wrapper {
   margin: 16px 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 .search-form .search-input {
@@ -1595,6 +1596,13 @@ header .menu_wrapper {
   background-color: currentColor;
 }
 
+@media screen and (max-width: 1024px) {
+  .social-box {
+    justify-content: center;
+    gap: 40px;
+    margin-bottom: 40px;
+  }
+}
 .woocommerce .woocommerce-result-count {
   margin-bottom: 40px;
 }
