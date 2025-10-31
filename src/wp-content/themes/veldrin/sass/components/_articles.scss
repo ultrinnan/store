@@ -1,0 +1,199 @@
+@use '../helpers/index' as *;
+
+.articles-page {
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .article-item {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 30px;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+
+  .article-image {
+    overflow: hidden;
+    border-radius: 8px;
+
+    a {
+      display: block;
+      line-height: 0;
+    }
+
+    img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+  }
+
+  .article-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .article-title {
+    font-size: 24px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+
+    a {
+      color: $black;
+      text-decoration: none;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: $gold;
+      }
+    }
+  }
+
+  .article-meta {
+    margin-bottom: 16px;
+    opacity: 0.5;
+    font-size: 12px;
+  }
+
+  .article-excerpt {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 1;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  .article-read-more {
+    display: inline-block;
+    padding: 10px 24px;
+    background-color: $black;
+    color: $white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    align-self: flex-start;
+
+    &:hover {
+      background-color: $gold;
+      color: $black;
+      border: 1px solid $black;
+    }
+  }
+
+  .no-articles {
+    text-align: center;
+    font-size: 18px;
+    padding: 60px 0;
+  }
+
+  // Pagination styles - matching WooCommerce style
+  .woocommerce-pagination.articles-pagination {
+    margin-top: 40px;
+    text-align: center;
+
+    ul.page-numbers {
+      display: inline-block;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border: 1px solid #d3ced2;
+      border-right: 0;
+
+      li {
+        display: inline-block;
+        margin: 0;
+        padding: 0;
+        border-right: 1px solid #d3ced2;
+
+        a.page-numbers,
+        span.page-numbers {
+          display: block;
+          padding: 0.5em 1em;
+          text-decoration: none;
+          color: $black;
+          min-width: 3em;
+          text-align: center;
+          line-height: 1;
+
+          &:hover {
+            background-color: #f7f6f7;
+          }
+        }
+
+        span.page-numbers.current {
+          background-color: #f7f6f7;
+          color: $black;
+          font-weight: 700;
+        }
+
+        span.page-numbers.dots {
+          padding: 0.5em 1em;
+          background: none;
+          cursor: default;
+        }
+
+        a.prev.page-numbers,
+        a.next.page-numbers {
+          font-weight: normal;
+        }
+      }
+    }
+  }
+
+  // Mobile responsive adjustments
+  @media (max-width: 768px) {
+    padding: 20px 0;
+
+    .page-title {
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .page-intro {
+      margin-bottom: 30px;
+      padding: 0 15px;
+    }
+
+    .articles-list {
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .article-item {
+      padding-bottom: 30px;
+    }
+
+    .article-title {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .article-image img {
+      height: 180px;
+    }
+
+    .article-excerpt {
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    .woocommerce-pagination.articles-pagination {
+      margin-top: 30px;
+      padding: 0 15px;
+    }
+  }
+}

@@ -230,15 +230,13 @@ article {
 
   a {
     padding: 10px 20px;
-    background: $black;
-    color: $white;
+    color: $black;
     text-decoration: none;
     border-radius: 4px;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
 
     &:hover {
-      background: $gold;
-      color: $black;
+      color: $gold;
     }
   }
 }

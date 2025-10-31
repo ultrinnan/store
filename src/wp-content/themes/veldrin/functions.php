@@ -282,3 +282,14 @@ add_filter( 'wp_nav_menu_objects', function( $items, $args ) {
     }
     return $items;
 }, 10, 2 );
+
+// Fix pagination for custom page templates
+add_action( 'init', function() {
+    add_rewrite_rule( '^articles/page/?([0-9]{1,})/?$', 'index.php?pagename=articles&paged=$matches[1]', 'top' );
+} );
+
+// Make sure 'paged' query var is recognized
+add_filter( 'query_vars', function( $vars ) {
+    $vars[] = 'paged';
+    return $vars;
+} );
