@@ -29,6 +29,11 @@ class F_WebP_Converter {
 	private $option_name = 'f_webp_converter_settings';
 	
 	/**
+	 * Statistics option name
+	 */
+	private $stats_option_name = 'f_webp_converter_stats';
+	
+	/**
 	 * Initialize the plugin
 	 */
 	public function __construct() {
@@ -385,6 +390,9 @@ class F_WebP_Converter {
 			<div class="f-webp-image-sizes-info">
 				<?php $this->render_image_sizes_info(); ?>
 			</div>
+			
+			<!-- Space Savings Statistics Section -->
+			<?php $this->render_space_savings_stats(); ?>
 		</div>
 		<?php
 	}
@@ -482,6 +490,9 @@ class F_WebP_Converter {
 			return false;
 		}
 		
+		// Get original file size for statistics
+		$original_size = filesize( $file_path );
+		
 		// Get image info
 		$image_info = wp_getimagesize( $file_path );
 		if ( ! $image_info ) {
@@ -524,6 +535,14 @@ class F_WebP_Converter {
 		imagedestroy( $image );
 		
 		if ( $success && file_exists( $webp_path ) ) {
+			// Get WEBP file size for statistics
+			$webp_size = filesize( $webp_path );
+			
+			// Track space savings
+			if ( $original_size > 0 && $webp_size > 0 ) {
+				$this->track_space_savings( $original_size, $webp_size );
+			}
+			
 			// Delete original file
 			@unlink( $file_path );
 			
@@ -531,6 +550,98 @@ class F_WebP_Converter {
 		}
 		
 		return false;
+	}
+	
+	/**
+	 * Track space savings statistics
+	 *
+	 * @param int $original_size Original file size in bytes
+	 * @param int $webp_size WEBP file size in bytes
+	 */
+	private function track_space_savings( $original_size, $webp_size ) {
+		$stats = get_option( $this->stats_option_name, array(
+			'total_original_size' => 0,
+			'total_webp_size'     => 0,
+			'total_images'        => 0,
+		) );
+		
+		$stats['total_original_size'] += $original_size;
+		$stats['total_webp_size']     += $webp_size;
+		$stats['total_images']++;
+		
+		update_option( $this->stats_option_name, $stats );
+	}
+	
+	/**
+	 * Get formatted file size
+	 *
+	 * @param int $bytes File size in bytes
+	 * @return string Formatted file size
+	 */
+	private function format_file_size( $bytes ) {
+		if ( $bytes >= 1073741824 ) {
+			return number_format( $bytes / 1073741824, 2 ) . ' GB';
+		} elseif ( $bytes >= 1048576 ) {
+			return number_format( $bytes / 1048576, 2 ) . ' MB';
+		} elseif ( $bytes >= 1024 ) {
+			return number_format( $bytes / 1024, 2 ) . ' KB';
+		} else {
+			return $bytes . ' bytes';
+		}
+	}
+	
+	/**
+	 * Render space savings statistics
+	 */
+	private function render_space_savings_stats() {
+		$stats = get_option( $this->stats_option_name, array(
+			'total_original_size' => 0,
+			'total_webp_size'     => 0,
+			'total_images'        => 0,
+		) );
+		
+		if ( $stats['total_images'] === 0 ) {
+			return;
+		}
+		
+		$original_size = $stats['total_original_size'];
+		$webp_size = $stats['total_webp_size'];
+		$savings = $original_size - $webp_size;
+		$savings_percent = $original_size > 0 ? round( ( $savings / $original_size ) * 100, 1 ) : 0;
+		
+		?>
+		<div style="margin-top: 30px; padding: 20px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+			<h2>Статистика економії місця</h2>
+			<p style="margin-bottom: 15px;">Статистика перетворення зображень у формат WEBP:</p>
+			<table class="widefat striped" style="margin-top: 10px;">
+				<tbody>
+					<tr>
+						<td style="width: 40%;"><strong>Кількість перетворених зображень:</strong></td>
+						<td><?php echo number_format( $stats['total_images'] ); ?></td>
+					</tr>
+					<tr>
+						<td><strong>Розмір оригінальних файлів (JPEG/PNG):</strong></td>
+						<td><?php echo esc_html( $this->format_file_size( $original_size ) ); ?></td>
+					</tr>
+					<tr>
+						<td><strong>Розмір файлів WEBP:</strong></td>
+						<td><?php echo esc_html( $this->format_file_size( $webp_size ) ); ?></td>
+					</tr>
+					<tr style="background: #f0f6fc; font-weight: bold;">
+						<td><strong>Економія місця:</strong></td>
+						<td style="color: #00a32a; font-size: 16px;">
+							<?php echo esc_html( $this->format_file_size( $savings ) ); ?> 
+							(<?php echo esc_html( $savings_percent ); ?>%)
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<p style="margin-top: 15px; font-size: 12px; color: #666;">
+				Ця статистика накопичується для всіх зображень, перетворених після встановлення плагіна. 
+				Щоб скинути статистику, деактивуйте та повторно активуйте плагін.
+			</p>
+		</div>
+		<?php
 	}
 	
 	/**
