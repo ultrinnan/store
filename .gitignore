@@ -64,8 +64,16 @@ src/wp-content/*
 !src/wp-content/mu-plugins/**
 
 # Optional: also unignore plugins if needed
+# Ignore all plugins
 src/wp-content/plugins/
-!src/wp-content/plugins/my-plugin/
+# Unignore plugins directory structure (needed for subdirectory matching)
+!src/wp-content/plugins/
+# Re-ignore all plugin subdirectories
+src/wp-content/plugins/*
+# Unignore only plugins starting with "f-pro" (wildcard pattern)
+!src/wp-content/plugins/f-pro*
+!src/wp-content/plugins/f-pro*/
+!src/wp-content/plugins/f-pro*/**
 
 # Except the themes folder
 !src/wp-content/
