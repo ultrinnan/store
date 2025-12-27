@@ -611,24 +611,24 @@ class F_WebP_Converter {
 		
 		?>
 		<div style="margin-top: 30px; padding: 20px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-			<h2>Статистика економії місця</h2>
-			<p style="margin-bottom: 15px;">Статистика перетворення зображень у формат WEBP:</p>
+			<h2>Space Savings Statistics</h2>
+			<p style="margin-bottom: 15px;">Statistics for images converted to WEBP format:</p>
 			<table class="widefat striped" style="margin-top: 10px;">
 				<tbody>
 					<tr>
-						<td style="width: 40%;"><strong>Кількість перетворених зображень:</strong></td>
+						<td style="width: 40%;"><strong>Total Images Converted:</strong></td>
 						<td><?php echo number_format( $stats['total_images'] ); ?></td>
 					</tr>
 					<tr>
-						<td><strong>Розмір оригінальних файлів (JPEG/PNG):</strong></td>
+						<td><strong>Original File Size (JPEG/PNG):</strong></td>
 						<td><?php echo esc_html( $this->format_file_size( $original_size ) ); ?></td>
 					</tr>
 					<tr>
-						<td><strong>Розмір файлів WEBP:</strong></td>
+						<td><strong>WEBP File Size:</strong></td>
 						<td><?php echo esc_html( $this->format_file_size( $webp_size ) ); ?></td>
 					</tr>
 					<tr style="background: #f0f6fc; font-weight: bold;">
-						<td><strong>Економія місця:</strong></td>
+						<td><strong>Space Saved:</strong></td>
 						<td style="color: #00a32a; font-size: 16px;">
 							<?php echo esc_html( $this->format_file_size( $savings ) ); ?> 
 							(<?php echo esc_html( $savings_percent ); ?>%)
@@ -637,8 +637,8 @@ class F_WebP_Converter {
 				</tbody>
 			</table>
 			<p style="margin-top: 15px; font-size: 12px; color: #666;">
-				Ця статистика накопичується для всіх зображень, перетворених після встановлення плагіна. 
-				Щоб скинути статистику, деактивуйте та повторно активуйте плагін.
+				These statistics accumulate for all images converted after plugin installation. 
+				To reset statistics, deactivate and reactivate the plugin.
 			</p>
 		</div>
 		<?php
