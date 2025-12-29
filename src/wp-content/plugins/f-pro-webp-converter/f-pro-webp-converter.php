@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: F-PRO Simple WebP Converter
- * Plugin URI: https://fedirko.pro
- * Description: Automatically compresses and converts uploaded images to WEBP format for better performance and smaller file sizes.
+ * Plugin Name: F-PRO WebP Converter
+ * Plugin URI: https://wordpress.org/plugins/f-pro-webp-converter/
+ * Description: Automatically compresses and converts uploaded JPEG and PNG images to WEBP format for better performance and smaller file sizes.
  * Version: 1.0.0
  * Author: Serhii Fedirko
  * Author URI: https://fedirko.pro

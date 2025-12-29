@@ -1,0 +1,14 @@
+GNU GENERAL PUBLIC LICENSE
+Version 2, June 1991
+
+Copyright (C) 1989, 1991 Free Software Foundation, Inc.
+51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+Everyone is permitted to copy and distribute verbatim copies
+of this license document, but changing it is not allowed.
+
+[This is the first released version of the GPL.  It is numbered 2 because version 1
+was used for the previous license.]
+
+For the full GPL v2 license text, visit: https://www.gnu.org/licenses/gpl-2.0.html
+
