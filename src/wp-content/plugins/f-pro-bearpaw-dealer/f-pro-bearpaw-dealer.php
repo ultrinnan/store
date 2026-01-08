@@ -112,6 +112,11 @@ class F_Bearpaw_Dealer {
 		
 		// Add script to pre-fill product form when opened from missing products list
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_product_form_prefill_script' ) );
+		
+		// Register AJAX handlers for chunked download
+		add_action( 'wp_ajax_f_bearpaw_download_chunk', array( $this, 'ajax_download_chunk' ) );
+		add_action( 'wp_ajax_f_bearpaw_finalize_download', array( $this, 'ajax_finalize_download' ) );
+		add_action( 'wp_ajax_f_bearpaw_clear_progress', array( $this, 'ajax_clear_progress' ) );
 	}
 	
 	/**
@@ -671,6 +676,357 @@ class F_Bearpaw_Dealer {
 	}
 	
 	/**
+	 * Download a chunk of products (5 pages at a time)
+	 * 
+	 * Downloads products starting from a specific page, processes up to 5 pages per chunk.
+	 * Stores progress in transient to allow resuming.
+	 *
+	 * @param string $source_name Source name ('B2B' or 'Retail')
+	 * @param int    $start_page Starting page number (1-based)
+	 * @param string $base_url Base URL without pagination parameters
+	 * @param string $cookies Cookies string for authentication
+	 * @param array  $headers Additional headers from cURL command
+	 * @return array Result with success status, downloaded pages, products count, and whether more pages exist
+	 */
+	private function download_products_chunk( $source_name, $start_page, $base_url, $cookies, $headers = array() ) {
+		$chunk_size = 5; // Download 5 pages per chunk
+		$all_products = array();
+		$pages_downloaded = 0;
+		$has_more = false;
+		$last_page_products_count = 0;
+		
+		for ( $i = 0; $i < $chunk_size; $i++ ) {
+			$page = $start_page + $i;
+			$url = $base_url . ( strpos( $base_url, '?' ) !== false ? '&' : '?' ) . 'page=' . $page . '&limit=250';
+			
+			$data = $this->get_bearpaw_json( $url, $cookies, $headers );
+			
+			if ( $data === false || ! isset( $data['products'] ) ) {
+				break; // Stop if error or no products key
+			}
+			
+			$products = $data['products'];
+			
+			if ( empty( $products ) ) {
+				break; // No more products
+			}
+			
+			$all_products = array_merge( $all_products, $products );
+			$pages_downloaded++;
+			$last_page_products_count = count( $products );
+			
+			// If we got less than 250 products, it's probably the last page
+			if ( $last_page_products_count < 250 ) {
+				break;
+			}
+			
+			// Small delay between pages
+			if ( $i < $chunk_size - 1 ) {
+				usleep( 200000 ); // 0.2 seconds
+			}
+		}
+		
+		// Check if there might be more pages (if we got exactly 250 products on last page)
+		if ( $last_page_products_count === 250 && $pages_downloaded === $chunk_size ) {
+			$has_more = true;
+		}
+		
+		// Store products in a temporary file instead of transient (to avoid max_allowed_packet issues)
+		$temp_filename = strtolower( $source_name ) . '_products_temp.json';
+		$temp_file_path = $this->temp_dir . '/' . $temp_filename;
+		
+		// Load existing products from temp file if exists
+		$existing_products = array();
+		if ( file_exists( $temp_file_path ) ) {
+			$existing_data = json_decode( file_get_contents( $temp_file_path ), true );
+			if ( $existing_data && isset( $existing_data['products'] ) ) {
+				$existing_products = $existing_data['products'];
+			}
+		}
+		
+		// Merge new products with existing
+		$all_products_merged = array_merge( $existing_products, $all_products );
+		
+		// Save merged products to temp file
+		$result = $this->save_json_to_temp( $temp_filename, array( 'products' => $all_products_merged ) );
+		if ( ! $result ) {
+			return array(
+				'success' => false,
+				'message' => 'Failed to save products to temporary file',
+			);
+		}
+		
+		// Store only metadata in transient (small data - no max_allowed_packet issue)
+		$transient_key = 'f_bearpaw_download_progress_' . strtolower( $source_name );
+		$progress = get_transient( $transient_key );
+		
+		if ( $progress === false ) {
+			// First chunk - initialize progress
+			$progress = array(
+				'current_page' => $start_page + $pages_downloaded,
+				'total_pages_downloaded' => $pages_downloaded,
+				'total_products' => count( $all_products_merged ),
+			);
+		} else {
+			// Update progress
+			$progress['current_page'] = $start_page + $pages_downloaded;
+			$progress['total_pages_downloaded'] += $pages_downloaded;
+			$progress['total_products'] = count( $all_products_merged );
+		}
+		
+		// Save progress metadata (expires in 1 hour)
+		set_transient( $transient_key, $progress, 3600 );
+		
+		return array(
+			'success' => true,
+			'pages_downloaded' => $pages_downloaded,
+			'products_in_chunk' => count( $all_products ),
+			'total_products' => count( $all_products_merged ),
+			'current_page' => $progress['current_page'],
+			'total_pages_downloaded' => $progress['total_pages_downloaded'],
+			'has_more' => $has_more,
+		);
+	}
+	
+	/**
+	 * AJAX handler for downloading a chunk of products
+	 */
+	public function ajax_download_chunk() {
+		// Set headers to return JSON
+		header( 'Content-Type: application/json' );
+		
+		// Verify nonce (die on failure but handle gracefully)
+		if ( ! check_ajax_referer( 'f_bearpaw_download_products', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => 'Security check failed. Please refresh the page and try again.' ) );
+			wp_die();
+		}
+		
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+			wp_die();
+		}
+		
+		$source_name = isset( $_POST['source'] ) ? sanitize_text_field( $_POST['source'] ) : '';
+		$start_page = isset( $_POST['start_page'] ) ? intval( $_POST['start_page'] ) : 1;
+		
+		if ( empty( $source_name ) || ! in_array( $source_name, array( 'B2B', 'Retail' ), true ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid source name' ) );
+			wp_die();
+		}
+		
+		$settings = get_option( $this->option_name, array() );
+		$curl_field = $source_name === 'B2B' ? 'b2b_curl' : 'retail_curl';
+		$curl_command = isset( $settings[ $curl_field ] ) ? trim( $settings[ $curl_field ] ) : '';
+		
+		if ( empty( $curl_command ) ) {
+			wp_send_json_error( array( 'message' => ucfirst( $source_name ) . ' cURL command not configured' ) );
+			wp_die();
+		}
+		
+		$parsed = $this->parse_curl_command( $curl_command );
+		
+		if ( ! $parsed || empty( $parsed['url'] ) ) {
+			wp_send_json_error( array( 'message' => 'Failed to parse cURL command' ) );
+			wp_die();
+		}
+		
+		// Extract base URL (without query parameters for pagination)
+		$base_url = strtok( $parsed['url'], '?' );
+		
+		// Increase execution time for this request
+		if ( function_exists( 'set_time_limit' ) ) {
+			@set_time_limit( 120 ); // 2 minutes per chunk
+		}
+		
+		// Turn off output buffering to prevent HTML output
+		if ( ob_get_level() ) {
+			ob_clean();
+		}
+		
+		try {
+			$result = $this->download_products_chunk( $source_name, $start_page, $base_url, $parsed['cookies'], $parsed['headers'] );
+			wp_send_json_success( $result );
+		} catch ( Exception $e ) {
+			// Log error for debugging
+			error_log( 'F-Bearpaw-Dealer AJAX Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
+			wp_send_json_error( array( 'message' => 'Exception: ' . $e->getMessage() . ' (Check error log for details)' ) );
+		} catch ( Error $e ) {
+			// Catch PHP 7+ fatal errors
+			error_log( 'F-Bearpaw-Dealer AJAX Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine() );
+			wp_send_json_error( array( 'message' => 'Fatal error: ' . $e->getMessage() . ' (Check error log for details)' ) );
+		}
+		
+		wp_die(); // Ensure script stops here
+	}
+	
+	/**
+	 * AJAX handler for finalizing download
+	 */
+	public function ajax_finalize_download() {
+		// Set headers to return JSON
+		header( 'Content-Type: application/json' );
+		
+		// Verify nonce (die on failure but handle gracefully)
+		if ( ! check_ajax_referer( 'f_bearpaw_download_products', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => 'Security check failed. Please refresh the page and try again.' ) );
+			wp_die();
+		}
+		
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+			wp_die();
+		}
+		
+		$source_name = isset( $_POST['source'] ) ? sanitize_text_field( $_POST['source'] ) : '';
+		
+		if ( empty( $source_name ) || ! in_array( $source_name, array( 'B2B', 'Retail' ), true ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid source name' ) );
+			wp_die();
+		}
+		
+		// Turn off output buffering to prevent HTML output
+		if ( ob_get_level() ) {
+			ob_clean();
+		}
+		
+		try {
+			$result = $this->finalize_download( $source_name );
+			
+			if ( $result['success'] ) {
+				wp_send_json_success( $result );
+			} else {
+				wp_send_json_error( $result );
+			}
+		} catch ( Exception $e ) {
+			error_log( 'F-Bearpaw-Dealer Finalize Error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => 'Exception: ' . $e->getMessage() ) );
+		} catch ( Error $e ) {
+			error_log( 'F-Bearpaw-Dealer Finalize Fatal Error: ' . $e->getMessage() );
+			wp_send_json_error( array( 'message' => 'Fatal error: ' . $e->getMessage() ) );
+		}
+		
+		wp_die(); // Ensure script stops here
+	}
+	
+	/**
+	 * AJAX handler for clearing download progress
+	 */
+	public function ajax_clear_progress() {
+		// Set headers to return JSON
+		header( 'Content-Type: application/json' );
+		
+		// Verify nonce (die on failure but handle gracefully)
+		if ( ! check_ajax_referer( 'f_bearpaw_download_products', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => 'Security check failed. Please refresh the page and try again.' ) );
+			wp_die();
+		}
+		
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+			wp_die();
+		}
+		
+		// Turn off output buffering to prevent HTML output
+		if ( ob_get_level() ) {
+			ob_clean();
+		}
+		
+		$source_name = isset( $_POST['source'] ) ? sanitize_text_field( $_POST['source'] ) : '';
+		
+		if ( ! empty( $source_name ) && in_array( $source_name, array( 'B2B', 'Retail' ), true ) ) {
+			$this->clear_download_progress( $source_name );
+			wp_send_json_success( array( 'message' => 'Progress cleared' ) );
+		} else {
+			// Clear both
+			$this->clear_download_progress( 'B2B' );
+			$this->clear_download_progress( 'Retail' );
+			wp_send_json_success( array( 'message' => 'All progress cleared' ) );
+		}
+		
+		wp_die(); // Ensure script stops here
+	}
+	
+	/**
+	 * Finalize download by saving all accumulated products to file
+	 * 
+	 * Loads all products from transient and saves them to JSON file.
+	 * Clears transient after successful save.
+	 *
+	 * @param string $source_name Source name ('B2B' or 'Retail')
+	 * @return array Result with success status and file path
+	 */
+	private function finalize_download( $source_name ) {
+		$temp_filename = strtolower( $source_name ) . '_products_temp.json';
+		$temp_file_path = $this->temp_dir . '/' . $temp_filename;
+		
+		// Check if temp file exists
+		if ( ! file_exists( $temp_file_path ) ) {
+			return array(
+				'success' => false,
+				'error' => 'No products to save. Download may not have started or temp file was deleted.',
+			);
+		}
+		
+		// Load products from temp file
+		$temp_data = json_decode( file_get_contents( $temp_file_path ), true );
+		
+		if ( ! $temp_data || empty( $temp_data['products'] ) ) {
+			return array(
+				'success' => false,
+				'error' => 'Temp file exists but contains no products.',
+			);
+		}
+		
+		$products = $temp_data['products'];
+		$filename = $source_name === 'B2B' ? 'b2b_products.json' : 'retail_products.json';
+		$final_file_path = $this->temp_dir . '/' . $filename;
+		
+		// Save to final file
+		$result = $this->save_json_to_temp( $filename, array( 'products' => $products ) );
+		
+		if ( ! $result ) {
+			return array(
+				'success' => false,
+				'error' => 'Failed to save JSON file',
+			);
+		}
+		
+		// Delete temp file
+		if ( file_exists( $temp_file_path ) ) {
+			@unlink( $temp_file_path );
+		}
+		
+		// Clear progress transient
+		$transient_key = 'f_bearpaw_download_progress_' . strtolower( $source_name );
+		$progress = get_transient( $transient_key );
+		delete_transient( $transient_key );
+		
+		return array(
+			'success' => true,
+			'products_count' => count( $products ),
+			'file_path' => $final_file_path,
+			'total_pages_downloaded' => $progress['total_pages_downloaded'] ?? 0,
+		);
+	}
+	
+	/**
+	 * Clear download progress for a source
+	 *
+	 * @param string $source_name Source name ('B2B' or 'Retail')
+	 */
+	private function clear_download_progress( $source_name ) {
+		$transient_key = 'f_bearpaw_download_progress_' . strtolower( $source_name );
+		delete_transient( $transient_key );
+		
+		// Also delete temp file if exists
+		$temp_filename = strtolower( $source_name ) . '_products_temp.json';
+		$temp_file_path = $this->temp_dir . '/' . $temp_filename;
+		if ( file_exists( $temp_file_path ) ) {
+			@unlink( $temp_file_path );
+		}
+	}
+	
+	/**
 	 * Test function to get products with hardcoded cookies (for testing)
 	 *
 	 * @return array|false Decoded JSON data or false on failure
@@ -851,38 +1207,56 @@ class F_Bearpaw_Dealer {
 	 */
 	public function check_json_access() {
 		$settings = get_option( $this->option_name, array() );
-		$b2b_cookies = isset( $settings['b2b_cookies'] ) ? trim( $settings['b2b_cookies'] ) : '';
-		$retail_cookies = isset( $settings['retail_cookies'] ) ? trim( $settings['retail_cookies'] ) : '';
+		$b2b_curl = isset( $settings['b2b_curl'] ) ? trim( $settings['b2b_curl'] ) : '';
+		$retail_curl = isset( $settings['retail_curl'] ) ? trim( $settings['retail_curl'] ) : '';
 		
 		$status = array(
 			'b2b_accessible' => false,
 			'b2b_error' => '',
+			'b2b_products_count' => 0,
 			'retail_accessible' => false,
 			'retail_error' => '',
+			'retail_products_count' => 0,
 		);
 		
 		// Check B2B portal
-		if ( ! empty( $b2b_cookies ) ) {
-			$b2b_data = $this->get_bearpaw_json( 'https://www.b2bportal.bearpaw-products.de/products.json', $b2b_cookies );
-			if ( $b2b_data !== false && isset( $b2b_data['products'] ) ) {
-				$status['b2b_accessible'] = true;
+		if ( ! empty( $b2b_curl ) ) {
+			$b2b_parsed = $this->parse_curl_command( $b2b_curl );
+			if ( $b2b_parsed && ! empty( $b2b_parsed['url'] ) && ! empty( $b2b_parsed['cookies'] ) ) {
+				// Extract base URL for products.json
+				$b2b_url = 'https://www.b2bportal.bearpaw-products.de/products.json';
+				$b2b_data = $this->get_bearpaw_json( $b2b_url, $b2b_parsed['cookies'], $b2b_parsed['headers'] );
+				if ( $b2b_data !== false && isset( $b2b_data['products'] ) ) {
+					$status['b2b_accessible'] = true;
+					$status['b2b_products_count'] = count( $b2b_data['products'] );
+				} else {
+					$status['b2b_error'] = 'Failed to access B2B JSON or invalid response';
+				}
 			} else {
-				$status['b2b_error'] = 'Failed to access B2B JSON or invalid response';
+				$status['b2b_error'] = 'Failed to parse B2B cURL command';
 			}
 		} else {
-			$status['b2b_error'] = 'B2B cookies not configured';
+			$status['b2b_error'] = 'B2B cURL command not configured';
 		}
 		
 		// Check retail site
-		if ( ! empty( $retail_cookies ) ) {
-			$retail_data = $this->get_bearpaw_json( 'https://bearpaw-products.com/products.json', $retail_cookies );
-			if ( $retail_data !== false && isset( $retail_data['products'] ) ) {
-				$status['retail_accessible'] = true;
+		if ( ! empty( $retail_curl ) ) {
+			$retail_parsed = $this->parse_curl_command( $retail_curl );
+			if ( $retail_parsed && ! empty( $retail_parsed['url'] ) && ! empty( $retail_parsed['cookies'] ) ) {
+				// Extract base URL for products.json
+				$retail_url = 'https://bearpaw-products.com/products.json';
+				$retail_data = $this->get_bearpaw_json( $retail_url, $retail_parsed['cookies'], $retail_parsed['headers'] );
+				if ( $retail_data !== false && isset( $retail_data['products'] ) ) {
+					$status['retail_accessible'] = true;
+					$status['retail_products_count'] = count( $retail_data['products'] );
+				} else {
+					$status['retail_error'] = 'Failed to access Retail JSON or invalid response';
+				}
 			} else {
-				$status['retail_error'] = 'Failed to access Retail JSON or invalid response';
+				$status['retail_error'] = 'Failed to parse Retail cURL command';
 			}
 		} else {
-			$status['retail_error'] = 'Retail cookies not configured';
+			$status['retail_error'] = 'Retail cURL command not configured';
 		}
 		
 		return $status;
@@ -1516,46 +1890,16 @@ class F_Bearpaw_Dealer {
 			delete_transient( 'f_bearpaw_price_update_result' );
 		}
 		
-		// Handle download products button click
+		// Handle download products button click (now just clears progress, actual download via AJAX)
 		if ( isset( $_POST['download_products'] ) && check_admin_referer( 'f_bearpaw_download_products' ) ) {
-			$settings = get_option( $this->option_name, array() );
-			$b2b_curl = isset( $settings['b2b_curl'] ) ? trim( $settings['b2b_curl'] ) : '';
-			$retail_curl = isset( $settings['retail_curl'] ) ? trim( $settings['retail_curl'] ) : '';
-			
-			// Clear temp directory first
+			// Clear temp directory and progress
 			$this->clear_temp_dir();
+			$this->clear_download_progress( 'B2B' );
+			$this->clear_download_progress( 'Retail' );
 			
-			$download_result = array(
-				'b2b' => null,
-				'retail' => null,
-			);
-			
-			// Download B2B products first
-			if ( ! empty( $b2b_curl ) ) {
-				$download_result['b2b'] = $this->download_all_products( $b2b_curl, 'B2B' );
-			} else {
-				$download_result['b2b'] = array(
-					'success' => false,
-					'error' => 'B2B cURL command not configured',
-				);
-			}
-			
-			// Then download Retail products
-			if ( ! empty( $retail_curl ) ) {
-				$download_result['retail'] = $this->download_all_products( $retail_curl, 'Retail' );
-			} else {
-				$download_result['retail'] = array(
-					'success' => false,
-					'error' => 'Retail cURL command not configured',
-				);
-			}
-			
-			// If both downloads were successful, redirect to open step 3
-			if ( isset( $download_result['b2b']['success'] ) && $download_result['b2b']['success'] &&
-			     isset( $download_result['retail']['success'] ) && $download_result['retail']['success'] ) {
-				wp_redirect( add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ) );
-				exit;
-			}
+			// Redirect to Step 2 where AJAX will handle the download
+			wp_redirect( add_query_arg( 'open_step', '2', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ) );
+			exit;
 		}
 		
 		// Handle settings save
@@ -1569,6 +1913,15 @@ class F_Bearpaw_Dealer {
 			exit;
 		}
 		
+		// Load download result from transient if exists (after redirect)
+		$stored_download_result = get_transient( 'f_bearpaw_download_result' );
+		if ( $stored_download_result !== false ) {
+			$download_result = $stored_download_result;
+			delete_transient( 'f_bearpaw_download_result' );
+		} else {
+			$download_result = null;
+		}
+		
 		$total_count = $this->get_bearpaw_products_count();
 		$published_count = $this->get_bearpaw_products_count_published();
 		$draft_count = $total_count - $published_count;
@@ -1577,6 +1930,9 @@ class F_Bearpaw_Dealer {
 		// Load JSON data from temp files if they exist
 		$b2b_data = $this->load_json_from_temp( 'b2b_products.json' );
 		$retail_data = $this->load_json_from_temp( 'retail_products.json' );
+		
+		// Check JSON API access status (always check, especially for Step 2)
+		$json_status = $this->check_json_access();
 		
 		// Enrich products with prices from JSON
 		if ( $b2b_data || $retail_data ) {
@@ -1637,11 +1993,16 @@ class F_Bearpaw_Dealer {
 			$open_step = 4;
 		}
 		
-		// If download was just completed successfully, open step 3
-		if ( $download_result !== null && 
-		     isset( $download_result['b2b']['success'] ) && $download_result['b2b']['success'] &&
-		     isset( $download_result['retail']['success'] ) && $download_result['retail']['success'] ) {
-			$open_step = 3;
+		// If download was just completed, open appropriate step
+		if ( $download_result !== null ) {
+			if ( isset( $download_result['b2b']['success'] ) && $download_result['b2b']['success'] &&
+			     isset( $download_result['retail']['success'] ) && $download_result['retail']['success'] ) {
+				// Both successful - open step 3
+				$open_step = 3;
+			} else {
+				// Some errors - stay on step 2 to show errors
+				$open_step = 2;
+			}
 		}
 		
 		// Check URL parameter for which step to open
@@ -1814,26 +2175,109 @@ class F_Bearpaw_Dealer {
 						<span class="f-bearpaw-accordion-toggle"><?php echo $open_step === 2 ? '−' : '+'; ?></span>
 					</div>
 					<div class="f-bearpaw-accordion-content">
+						<!-- JSON API Access Status (shown before download button) -->
+						<div class="f-bearpaw-json-status" style="margin-bottom: 30px; padding: 15px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
+							<h3 style="margin-top: 0;">JSON API Access Status</h3>
+							<table class="widefat">
+								<thead>
+									<tr>
+										<th>Source</th>
+										<th>Status</th>
+										<th>Products Available</th>
+										<th>Message</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td><strong>B2B Portal</strong><br/><small>https://www.b2bportal.bearpaw-products.de/products.json</small></td>
+										<td>
+											<?php if ( $b2b_data && ! empty( $b2b_data['products'] ) ) : ?>
+												<span style="color: #00a32a; font-weight: bold;">✓ Loaded</span>
+											<?php elseif ( $json_status['b2b_accessible'] ) : ?>
+												<span style="color: #00a32a; font-weight: bold;">✓ Accessible</span>
+											<?php else : ?>
+												<span style="color: #d63638; font-weight: bold;">✗ Not Accessible</span>
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( $b2b_data && ! empty( $b2b_data['products'] ) ) : ?>
+												<strong><?php echo number_format( count( $b2b_data['products'] ) ); ?></strong> products
+											<?php elseif ( ! empty( $json_status['b2b_products_count'] ) ) : ?>
+												<strong><?php echo number_format( $json_status['b2b_products_count'] ); ?></strong> products
+											<?php else : ?>
+												-
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( ! empty( $json_status['b2b_error'] ) ) : ?>
+												<span style="color: #d63638;"><?php echo esc_html( $json_status['b2b_error'] ); ?></span>
+											<?php else : ?>
+												<span style="color: #00a32a;">OK</span>
+											<?php endif; ?>
+										</td>
+									</tr>
+									<tr>
+										<td><strong>Retail Site</strong><br/><small>https://bearpaw-products.com/products.json</small></td>
+										<td>
+											<?php if ( $retail_data && ! empty( $retail_data['products'] ) ) : ?>
+												<span style="color: #00a32a; font-weight: bold;">✓ Loaded</span>
+											<?php elseif ( $json_status['retail_accessible'] ) : ?>
+												<span style="color: #00a32a; font-weight: bold;">✓ Accessible</span>
+											<?php else : ?>
+												<span style="color: #d63638; font-weight: bold;">✗ Not Accessible</span>
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( $retail_data && ! empty( $retail_data['products'] ) ) : ?>
+												<strong><?php echo number_format( count( $retail_data['products'] ) ); ?></strong> products
+											<?php elseif ( ! empty( $json_status['retail_products_count'] ) ) : ?>
+												<strong><?php echo number_format( $json_status['retail_products_count'] ); ?></strong> products
+											<?php else : ?>
+												-
+											<?php endif; ?>
+										</td>
+										<td>
+											<?php if ( ! empty( $json_status['retail_error'] ) ) : ?>
+												<span style="color: #d63638;"><?php echo esc_html( $json_status['retail_error'] ); ?></span>
+											<?php else : ?>
+												<span style="color: #00a32a;">OK</span>
+											<?php endif; ?>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<?php if ( ! $json_status['b2b_accessible'] || ! $json_status['retail_accessible'] ) : ?>
+								<p style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107;">
+									<strong>⚠️ Warning:</strong> One or both APIs are not accessible. Please check your cURL commands in Step 1 before attempting to download products.
+								</p>
+							<?php endif; ?>
+							<p style="margin-top: 15px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1; font-size: 12px;">
+								<strong>How to get cURL commands:</strong> Log in to each site in your browser, open Developer Tools (F12), go to Network tab, 
+								visit the products.json URL, right-click on the request → Copy → Copy as cURL. Paste the full cURL command into the fields in Step 1 above.
+							</p>
+						</div>
+						
 						<p style="color: #646970; margin-bottom: 15px;">
 							This will clear the temporary directory and download all products from both B2B and Retail stores.
-							The process may take several minutes depending on the number of products.
+							<strong>The process may take several minutes</strong> depending on the number of products. Please do not close this page during download.
 						</p>
 						
 						<?php if ( $download_result === null ) : ?>
-							<form method="post" id="step2-form" style="margin: 15px 0;">
-								<?php wp_nonce_field( 'f_bearpaw_download_products' ); ?>
-								<button type="submit" name="download_products" class="button button-primary button-large" style="font-size: 16px; padding: 12px 24px;" onclick="handleStep2Download(event)">
+							<form method="post" id="step2-form" style="margin: 15px 0;" onsubmit="handleStep2Download(event); return false;">
+								<?php 
+								$download_nonce = wp_create_nonce( 'f_bearpaw_download_products' );
+								wp_nonce_field( 'f_bearpaw_download_products', '_wpnonce', false );
+								?>
+								<input type="hidden" id="download-nonce" value="<?php echo esc_attr( $download_nonce ); ?>" />
+								<button type="submit" name="download_products" class="button button-primary button-large" style="font-size: 16px; padding: 12px 24px;" id="download-button" <?php echo ( ! $json_status['b2b_accessible'] || ! $json_status['retail_accessible'] ) ? 'disabled title="Please fix API access issues before downloading"' : ''; ?>>
 									📥 Download All Products
 								</button>
+								<?php if ( ! $json_status['b2b_accessible'] || ! $json_status['retail_accessible'] ) : ?>
+									<p style="margin-top: 10px; color: #d63638; font-size: 13px;">
+										⚠️ Cannot download: One or both APIs are not accessible. Please check the status above and fix the cURL commands in Step 1.
+									</p>
+								<?php endif; ?>
 							</form>
-						<?php else : ?>
-							<div class="f-bearpaw-progress">
-								<p><strong>Download in progress...</strong></p>
-								<div class="f-bearpaw-progress-bar">
-									<div class="f-bearpaw-progress-fill" id="progress-bar" style="width: 100%;"></div>
-								</div>
-								<p id="progress-text">Processing...</p>
-							</div>
 						<?php endif; ?>
 				
 						<?php if ( $download_result !== null ) : ?>
@@ -1875,67 +2319,6 @@ class F_Bearpaw_Dealer {
 								</div>
 							</div>
 						<?php endif; ?>
-						
-						<!-- JSON API Access Status -->
-						<div class="f-bearpaw-json-status" style="margin-top: 30px; padding: 15px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);">
-							<h3 style="margin-top: 0;">JSON API Access Status</h3>
-							<table class="widefat">
-								<thead>
-									<tr>
-										<th>Source</th>
-										<th>Status</th>
-										<th>Products Loaded</th>
-										<th>Message</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td><strong>B2B Portal</strong><br/><small>https://www.b2bportal.bearpaw-products.de/products.json</small></td>
-										<td>
-											<?php if ( $b2b_data && ! empty( $b2b_data['products'] ) ) : ?>
-												<span style="color: #00a32a; font-weight: bold;">✓ Loaded</span>
-											<?php elseif ( $json_status['b2b_accessible'] ) : ?>
-												<span style="color: #00a32a; font-weight: bold;">✓ Accessible</span>
-											<?php else : ?>
-												<span style="color: #d63638; font-weight: bold;">✗ Not Accessible</span>
-											<?php endif; ?>
-										</td>
-										<td>
-											<?php if ( $b2b_data && ! empty( $b2b_data['products'] ) ) : ?>
-												<strong><?php echo number_format( count( $b2b_data['products'] ) ); ?></strong> products
-											<?php else : ?>
-												-
-											<?php endif; ?>
-										</td>
-										<td><?php echo esc_html( $json_status['b2b_error'] ?: 'OK' ); ?></td>
-									</tr>
-									<tr>
-										<td><strong>Retail Site</strong><br/><small>https://bearpaw-products.com/products.json</small></td>
-										<td>
-											<?php if ( $retail_data && ! empty( $retail_data['products'] ) ) : ?>
-												<span style="color: #00a32a; font-weight: bold;">✓ Loaded</span>
-											<?php elseif ( $json_status['retail_accessible'] ) : ?>
-												<span style="color: #00a32a; font-weight: bold;">✓ Accessible</span>
-											<?php else : ?>
-												<span style="color: #d63638; font-weight: bold;">✗ Not Accessible</span>
-											<?php endif; ?>
-										</td>
-										<td>
-											<?php if ( $retail_data && ! empty( $retail_data['products'] ) ) : ?>
-												<strong><?php echo number_format( count( $retail_data['products'] ) ); ?></strong> products
-											<?php else : ?>
-												-
-											<?php endif; ?>
-										</td>
-										<td><?php echo esc_html( $json_status['retail_error'] ?: 'OK' ); ?></td>
-									</tr>
-								</tbody>
-							</table>
-							<p style="margin-top: 15px; padding: 10px; background: #f0f6fc; border-left: 4px solid #2271b1;">
-								<strong>How to get cookies:</strong> Log in to each site in your browser, open Developer Tools (F12), go to Network tab, 
-								visit the products.json URL, then copy the Cookie header from the request. Paste it into the fields above.
-							</p>
-						</div>
 						
 						<!-- Show current files status -->
 						<?php
@@ -2379,6 +2762,11 @@ class F_Bearpaw_Dealer {
 		</div>
 		
 		<script>
+		// Make ajaxurl available
+		var ajaxurl = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
+		// Get nonce from hidden input
+		var downloadNonce = document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '';
+		
 		function toggleAccordion(step) {
 			// Close all accordion items
 			document.querySelectorAll('.f-bearpaw-accordion-item').forEach(function(item) {
@@ -2414,44 +2802,223 @@ class F_Bearpaw_Dealer {
 		}
 		
 		function handleStep2Download(event) {
-			// Show progress indicator
+			event.preventDefault();
+			
 			var form = document.getElementById('step2-form');
-			if (form) {
-				var button = form.querySelector('button[type="submit"]');
-				if (button) {
-					button.disabled = true;
-					button.textContent = '⏳ Downloading...';
+			if (!form) return;
+			
+			var button = form.querySelector('button[type="submit"]');
+			if (button) {
+				button.disabled = true;
+				button.textContent = '⏳ Starting download...';
+			}
+			
+			// Clear previous progress
+			var existingContainer = document.getElementById('download-progress-container');
+			if (existingContainer) {
+				existingContainer.remove();
+			}
+			
+			// Create progress container
+			var progressContainer = document.createElement('div');
+			progressContainer.id = 'download-progress-container';
+			progressContainer.style.cssText = 'margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);';
+			progressContainer.innerHTML = '<h3 style="margin-top: 0;">Download Progress</h3>' +
+				'<div id="b2b-progress" style="margin-bottom: 20px;"></div>' +
+				'<div id="retail-progress" style="margin-bottom: 20px;"></div>' +
+				'<div class="f-bearpaw-progress-bar"><div class="f-bearpaw-progress-fill" id="overall-progress-bar" style="width: 0%;"></div></div>' +
+				'<p id="overall-progress-text" style="margin-top: 10px; color: #646970;">Initializing...</p>';
+			form.insertAdjacentElement('afterend', progressContainer);
+			
+			// Get nonce from form or hidden input
+			var nonce = downloadNonce || (form.querySelector('input[name="_wpnonce"]') ? form.querySelector('input[name="_wpnonce"]').value : '');
+			
+			if (!nonce) {
+				alert('Security token missing. Please refresh the page and try again.');
+				if (button) button.disabled = false;
+				return;
+			}
+			
+			// Clear progress via AJAX first
+			jQuery.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'f_bearpaw_clear_progress',
+					nonce: nonce,
+					source: '' // Clear both
+				},
+				success: function() {
+					// Start downloading both sources sequentially (B2B first, then Retail)
+					downloadSource('B2B', function() {
+						downloadSource('Retail', function() {
+							// Both downloads completed
+							if (button) {
+								button.textContent = '✅ Download Completed';
+							}
+							document.getElementById('overall-progress-text').textContent = '✅ All downloads completed! Page will reload in 3 seconds...';
+							setTimeout(function() {
+								window.location.href = '<?php echo add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ); ?>';
+							}, 3000);
+						});
+					});
+				},
+				error: function() {
+					// Continue anyway
+					downloadSource('B2B', function() {
+						downloadSource('Retail', function() {
+							if (button) {
+								button.textContent = '✅ Download Completed';
+							}
+							document.getElementById('overall-progress-text').textContent = '✅ All downloads completed! Page will reload in 3 seconds...';
+							setTimeout(function() {
+								window.location.href = '<?php echo add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ); ?>';
+							}, 3000);
+						});
+					});
 				}
+			});
+		}
+		
+		function downloadSource(source, callback) {
+			var progressDiv = document.getElementById(source.toLowerCase() + '-progress');
+			progressDiv.innerHTML = '<p><strong>' + source + ':</strong> <span id="' + source.toLowerCase() + '-status">Starting...</span></p>' +
+				'<div class="f-bearpaw-progress-bar"><div class="f-bearpaw-progress-fill" id="' + source.toLowerCase() + '-progress-bar" style="width: 0%;"></div></div>' +
+				'<p id="' + source.toLowerCase() + '-progress-text" style="font-size: 12px; color: #646970; margin-top: 5px;">Preparing...</p>';
+			
+			var startPage = 1;
+			var totalProducts = 0;
+			var totalPages = 0;
+			
+			function downloadChunk() {
+				var statusEl = document.getElementById(source.toLowerCase() + '-status');
+				var progressBar = document.getElementById(source.toLowerCase() + '-progress-bar');
+				var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
+				var overallProgressBar = document.getElementById('overall-progress-bar');
+				var overallProgressText = document.getElementById('overall-progress-text');
 				
-				// Create progress bar if it doesn't exist
-				if (!document.getElementById('progress-bar')) {
-					var progressHtml = '<div class="f-bearpaw-progress" style="margin-top: 20px;"><p><strong>Download in progress...</strong></p><div class="f-bearpaw-progress-bar"><div class="f-bearpaw-progress-fill" id="progress-bar" style="width: 0%;"></div></div><p id="progress-text">Starting download...</p></div>';
-					form.insertAdjacentHTML('afterend', progressHtml);
-					
-					// Simulate progress (since we can't track real progress easily)
-					var progress = 0;
-					var interval = setInterval(function() {
-						progress += 10;
-						var progressBar = document.getElementById('progress-bar');
-						var progressText = document.getElementById('progress-text');
-						if (progressBar) {
-							progressBar.style.width = Math.min(progress, 90) + '%';
-						}
-						if (progressText) {
-							if (progress < 50) {
-								progressText.textContent = 'Downloading B2B products...';
-							} else if (progress < 90) {
-								progressText.textContent = 'Downloading Retail products...';
+				var nonce = downloadNonce || (document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '') || 
+					(document.querySelector('input[name="_wpnonce"]') ? document.querySelector('input[name="_wpnonce"]').value : '');
+				
+				jQuery.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'f_bearpaw_download_chunk',
+						nonce: nonce,
+						source: source,
+						start_page: startPage
+					},
+					dataType: 'json',
+					success: function(response) {
+						if (response.success && response.data) {
+							var data = response.data;
+							totalProducts = data.total_products || 0;
+							totalPages = data.total_pages_downloaded || 0;
+							
+							// Update source-specific progress (estimate based on pages)
+							var estimatedTotalPages = data.has_more ? totalPages + 10 : totalPages; // Rough estimate
+							var sourceProgress = estimatedTotalPages > 0 ? Math.min(90, (totalPages / estimatedTotalPages) * 100) : 50;
+							if (progressBar) progressBar.style.width = sourceProgress + '%';
+							
+							if (statusEl) {
+								statusEl.textContent = data.has_more ? 
+									'Downloading... ' + totalPages + ' pages, ' + totalProducts.toLocaleString() + ' products' :
+									'✅ Completed: ' + totalPages + ' pages, ' + totalProducts.toLocaleString() + ' products';
+							}
+							if (progressText) {
+								progressText.textContent = 'Pages downloaded: ' + totalPages + ' | Products: ' + totalProducts.toLocaleString() + 
+									(data.has_more ? ' | Loading more...' : ' | Finalizing...');
+							}
+							
+							// Update overall progress (B2B is 50%, Retail is 50%)
+							var overallProgress = 0;
+							if (source === 'B2B') {
+								overallProgress = data.has_more ? Math.min(45, sourceProgress * 0.5) : 50;
 							} else {
-								progressText.textContent = 'Finalizing...';
+								overallProgress = data.has_more ? Math.min(95, 50 + (sourceProgress * 0.5)) : 100;
+							}
+							if (overallProgressBar) overallProgressBar.style.width = overallProgress + '%';
+							
+							if (data.has_more) {
+								// Continue with next chunk
+								startPage = data.current_page;
+								setTimeout(downloadChunk, 500); // Small delay between chunks
+							} else {
+								// Finalize this source
+								if (progressBar) progressBar.style.width = '100%';
+								finalizeDownload(source, function() {
+									if (callback) callback();
+								});
+							}
+						} else {
+							// Error occurred
+							if (statusEl) statusEl.textContent = '❌ Error: ' + (response.data && response.data.message ? response.data.message : 'Unknown error');
+							if (progressText) progressText.textContent = 'Error occurred. Please try again.';
+							if (progressBar) progressBar.style.background = '#d63638';
+							if (overallProgressText) overallProgressText.textContent = '❌ Download failed for ' + source;
+							if (callback) callback(); // Continue anyway
+						}
+					},
+					error: function(xhr, status, error) {
+						var statusEl = document.getElementById(source.toLowerCase() + '-status');
+						var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
+						var overallProgressText = document.getElementById('overall-progress-text');
+						var errorMsg = error;
+						
+						// Try to parse error response
+						if (xhr.responseText) {
+							try {
+								var errorResponse = JSON.parse(xhr.responseText);
+								if (errorResponse.data && errorResponse.data.message) {
+									errorMsg = errorResponse.data.message;
+								}
+							} catch (e) {
+								// If response is HTML, extract error message
+								if (xhr.responseText.indexOf('<') !== -1) {
+									errorMsg = 'Server returned HTML instead of JSON. This usually means a PHP error occurred. Please check server logs.';
+								}
 							}
 						}
-						if (progress >= 90) {
-							clearInterval(interval);
-						}
-					}, 500);
-				}
+						
+						if (statusEl) statusEl.textContent = '❌ Error: ' + errorMsg;
+						if (progressText) progressText.textContent = 'AJAX error occurred: ' + status + ' - ' + errorMsg;
+						if (overallProgressText) overallProgressText.textContent = '❌ Download failed for ' + source + ': ' + errorMsg;
+						if (callback) callback(); // Continue anyway
+					}
+				});
 			}
+			
+			// Start downloading chunks
+			downloadChunk();
+		}
+		
+		function finalizeDownload(source, callback) {
+			var nonce = downloadNonce || (document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '') || 
+				(document.querySelector('input[name="_wpnonce"]') ? document.querySelector('input[name="_wpnonce"]').value : '');
+			
+			jQuery.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'f_bearpaw_finalize_download',
+					nonce: nonce,
+					source: source
+				},
+				dataType: 'json',
+				success: function(response) {
+					if (response.success && response.data) {
+						var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
+						if (progressText) {
+							progressText.textContent = '✅ Saved: ' + response.data.products_count.toLocaleString() + ' products to file';
+						}
+					}
+					if (callback) callback();
+				},
+				error: function() {
+					if (callback) callback(); // Continue anyway
+				}
+			});
 		}
 		
 		// Auto-open accordion on page load based on URL parameter or completed steps
