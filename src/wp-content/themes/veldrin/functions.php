@@ -327,10 +327,12 @@ add_action( 'template_redirect', 'veldrin_track_product_view' );
  * Add Featured product checkbox to product edit page (General tab)
  */
 function veldrin_add_featured_checkbox() {
+    $product = wc_get_product( get_the_ID() );
+    $value   = $product && $product->get_featured() ? 'yes' : '';
     echo '<div class="options_group">';
     woocommerce_wp_checkbox( array(
         'id'          => '_featured',
-        'value'       => get_post_meta( get_the_ID(), '_featured', true ),
+        'value'       => $value,
         'label'       => __( 'Featured product', 'veldrin' ),
         'description' => __( 'Show in "Our latest and greatest" section on the homepage.', 'veldrin' ),
         'desc_tip'    => true,
@@ -340,9 +342,25 @@ function veldrin_add_featured_checkbox() {
 add_action( 'woocommerce_product_options_general_product_data', 'veldrin_add_featured_checkbox' );
 
 /**
- * Save Featured product checkbox
+ * Save Featured product checkbox (classic editor)
  */
 function veldrin_save_featured_checkbox( $id, $post ) {
-    update_post_meta( $id, '_featured', isset( $_POST['_featured'] ) ? 'yes' : 'no' );
+    $product = wc_get_product( $id );
+    if ( $product && isset( $_POST['_featured'] ) ) {
+        $product->set_featured( true );
+        $product->save();
+        delete_transient( 'wc_featured_products' );
+    } elseif ( $product ) {
+        $product->set_featured( false );
+        $product->save();
+        delete_transient( 'wc_featured_products' );
+    }
 }
 add_action( 'woocommerce_process_product_meta', 'veldrin_save_featured_checkbox', 10, 2 );
+
+/**
+ * Clear featured products cache when product is updated (e.g. star clicked on products list)
+ */
+add_action( 'woocommerce_update_product', function() {
+    delete_transient( 'wc_featured_products' );
+}, 10, 0 );

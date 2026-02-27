@@ -13,22 +13,25 @@ get_header(); ?>
 		<h2 class="title">Our latest and greatest</h2>
 		
 		<?php
-		// Featured products first (max 10)
-		$featured_query = new WP_Query( array(
-			'post_type'      => 'product',
-			'posts_per_page' => 10,
-			'orderby'        => 'date',
-			'order'          => 'DESC',
-			'post_status'    => 'publish',
-			'meta_query'     => array(
-				array(
-					'key'     => '_featured',
-					'value'   => 'yes',
-					'compare' => '=',
+		// Featured products first (max 10) - use WooCommerce API for correct featured list
+		// Clear cache so star/checkbox changes from admin are reflected immediately
+		delete_transient( 'wc_featured_products' );
+		$featured_ids_raw = function_exists( 'wc_get_featured_product_ids' ) ? wc_get_featured_product_ids() : array();
+		$featured_posts   = array();
+		if ( ! empty( $featured_ids_raw ) ) {
+			$featured_query = new WP_Query( array(
+				'post_type'      => 'product',
+				'posts_per_page' => 10,
+				'post__in'       => $featured_ids_raw,
+				'orderby'        => array(
+					'date' => 'DESC',
+					'ID'   => 'DESC',
 				),
-			),
-		) );
-		$featured_ids = wp_list_pluck( $featured_query->posts, 'ID' );
+				'post_status'    => 'publish',
+			) );
+			$featured_posts = $featured_query->posts;
+		}
+		$featured_ids = wp_list_pluck( $featured_posts, 'ID' );
 		$need = 10 - count( $featured_ids );
 
 		// Fill remaining slots with most popular (by views), then latest if needed
@@ -40,8 +43,11 @@ get_header(); ?>
 				'post__not_in'   => $featured_ids,
 				'post_status'    => 'publish',
 				'meta_key'       => '_product_views_count',
-				'orderby'        => 'meta_value_num',
-				'order'          => 'DESC',
+				'orderby'        => array(
+					'meta_value_num' => 'DESC',
+					'date'           => 'DESC',
+					'ID'             => 'DESC',
+				),
 			) );
 			$fill_posts = $popular_query->posts;
 			$filled_ids = wp_list_pluck( $fill_posts, 'ID' );
@@ -54,14 +60,16 @@ get_header(); ?>
 					'posts_per_page' => $still_need,
 					'post__not_in'   => array_merge( $featured_ids, $filled_ids ),
 					'post_status'    => 'publish',
-					'orderby'        => 'date',
-					'order'          => 'DESC',
+					'orderby'        => array(
+						'date' => 'DESC',
+						'ID'   => 'DESC',
+					),
 				) );
 				$fill_posts = array_merge( $fill_posts, $latest_query->posts );
 			}
 		}
 
-		$latest_products = array_merge( $featured_query->posts, $fill_posts );
+		$latest_products = array_merge( $featured_posts, $fill_posts );
 		$has_products = ! empty( $latest_products );
 		?>
 		<?php if ( $has_products ) : ?>
