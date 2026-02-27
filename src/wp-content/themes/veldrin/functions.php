@@ -329,6 +329,10 @@ add_action( 'template_redirect', 'veldrin_track_product_view' );
 function veldrin_add_featured_checkbox() {
     $product = wc_get_product( get_the_ID() );
     $value   = $product && $product->get_featured() ? 'yes' : '';
+    $priority = $product ? (int) $product->get_meta( '_featured_priority' ) : 1;
+    if ( $priority < 1 ) {
+        $priority = 1;
+    }
     echo '<div class="options_group">';
     woocommerce_wp_checkbox( array(
         'id'          => '_featured',
@@ -336,6 +340,18 @@ function veldrin_add_featured_checkbox() {
         'label'       => __( 'Featured product', 'veldrin' ),
         'description' => __( 'Show in "Our latest and greatest" section on the homepage.', 'veldrin' ),
         'desc_tip'    => true,
+    ) );
+    woocommerce_wp_text_input( array(
+        'id'                => '_featured_priority',
+        'type'              => 'number',
+        'label'             => __( 'Priority in featured list', 'veldrin' ),
+        'value'             => $priority,
+        'description'       => __( 'Lower number = higher priority. Only top 10 by priority appear on the homepage. Default: 1.', 'veldrin' ),
+        'desc_tip'          => true,
+        'custom_attributes' => array(
+            'min'  => '1',
+            'step' => '1',
+        ),
     ) );
     echo '</div>';
 }
@@ -349,7 +365,10 @@ function veldrin_save_featured_checkbox( $id, $post ) {
     if ( ! $product ) {
         return;
     }
-    $product->set_featured( isset( $_POST['_featured'] ) );
+    // Check for 'yes' - unchecked sends nothing or hidden field value, not 'yes'
+    $product->set_featured( 'yes' === ( $_POST['_featured'] ?? '' ) );
+    $priority = isset( $_POST['_featured_priority'] ) ? max( 1, (int) $_POST['_featured_priority'] ) : 1;
+    $product->update_meta_data( '_featured_priority', $priority );
     $product->save();
 }
 add_action( 'woocommerce_process_product_meta', 'veldrin_save_featured_checkbox', 10, 2 );

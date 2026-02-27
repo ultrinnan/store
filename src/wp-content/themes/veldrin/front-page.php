@@ -13,14 +13,10 @@ get_header(); ?>
 		<h2 class="title">Our latest and greatest</h2>
 		
 		<?php
-		// Featured products first (max 10) - product_visibility taxonomy (matches WooCommerce)
+		// Featured products first (max 10) - product_visibility taxonomy, sorted by priority
 		$featured_query = new WP_Query( array(
 			'post_type'      => 'product',
-			'posts_per_page' => 10,
-			'orderby'        => array(
-				'date' => 'DESC',
-				'ID'   => 'DESC',
-			),
+			'posts_per_page' => -1,
 			'post_status'    => 'publish',
 			'tax_query'      => array(
 				'relation' => 'AND',
@@ -37,7 +33,22 @@ get_header(); ?>
 				),
 			),
 		) );
-		$featured_posts = $featured_query->posts;
+		$all_featured = $featured_query->posts;
+		// Sort by priority (lower = first), then date, then ID. Default priority = 1.
+		usort( $all_featured, function( $a, $b ) {
+			$prio_a = max( 1, (int) get_post_meta( $a->ID, '_featured_priority', true ) );
+			$prio_b = max( 1, (int) get_post_meta( $b->ID, '_featured_priority', true ) );
+			if ( $prio_a !== $prio_b ) {
+				return $prio_a <=> $prio_b;
+			}
+			$date_a = strtotime( $a->post_date );
+			$date_b = strtotime( $b->post_date );
+			if ( $date_a !== $date_b ) {
+				return $date_b <=> $date_a; // newer first
+			}
+			return $b->ID <=> $a->ID;
+		} );
+		$featured_posts = array_slice( $all_featured, 0, 10 );
 		$featured_ids   = wp_list_pluck( $featured_posts, 'ID' );
 		$need = 10 - count( $featured_ids );
 
