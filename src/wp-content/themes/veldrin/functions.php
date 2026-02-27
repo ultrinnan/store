@@ -327,19 +327,21 @@ add_action( 'template_redirect', 'veldrin_track_product_view' );
  * Add Featured product checkbox to product edit page (General tab)
  */
 function veldrin_add_featured_checkbox() {
-    $product = wc_get_product( get_the_ID() );
-    $value   = $product && $product->get_featured() ? 'yes' : '';
+    $product  = wc_get_product( get_the_ID() );
+    $value    = $product && $product->get_featured() ? 'yes' : '';
     $priority = $product ? (int) $product->get_meta( '_featured_priority' ) : 1;
     if ( $priority < 1 ) {
         $priority = 1;
     }
     echo '<div class="options_group">';
     woocommerce_wp_checkbox( array(
-        'id'          => '_featured',
-        'value'       => $value,
-        'label'       => __( 'Featured product', 'veldrin' ),
-        'description' => __( 'Show in "Our latest and greatest" section on the homepage.', 'veldrin' ),
-        'desc_tip'    => true,
+        'id'               => 'veldrin_featured',
+        'name'             => 'veldrin_featured',
+        'value'            => $value,
+        'label'            => __( 'Featured product', 'veldrin' ),
+        'description'      => __( 'Show in "Our latest and greatest" section on the homepage.', 'veldrin' ),
+        'desc_tip'         => true,
+        'unchecked_value'  => 'no',
     ) );
     woocommerce_wp_text_input( array(
         'id'                => '_featured_priority',
@@ -358,17 +360,15 @@ function veldrin_add_featured_checkbox() {
 add_action( 'woocommerce_product_options_general_product_data', 'veldrin_add_featured_checkbox' );
 
 /**
- * Save Featured product checkbox (classic editor)
+ * Save Featured product checkbox and priority.
+ * Uses woocommerce_admin_process_product_object to run late and override Catalog visibility.
  */
-function veldrin_save_featured_checkbox( $id, $post ) {
-    $product = wc_get_product( $id );
-    if ( ! $product ) {
+function veldrin_save_featured_product_data( $product ) {
+    if ( ! $product || ! isset( $_POST['veldrin_featured'] ) ) {
         return;
     }
-    // Check for 'yes' - unchecked sends nothing or hidden field value, not 'yes'
-    $product->set_featured( 'yes' === ( $_POST['_featured'] ?? '' ) );
+    $product->set_featured( 'yes' === $_POST['veldrin_featured'] );
     $priority = isset( $_POST['_featured_priority'] ) ? max( 1, (int) $_POST['_featured_priority'] ) : 1;
     $product->update_meta_data( '_featured_priority', $priority );
-    $product->save();
 }
-add_action( 'woocommerce_process_product_meta', 'veldrin_save_featured_checkbox', 10, 2 );
+add_action( 'woocommerce_admin_process_product_object', 'veldrin_save_featured_product_data', 999, 1 );
