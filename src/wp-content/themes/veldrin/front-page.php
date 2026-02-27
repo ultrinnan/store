@@ -13,21 +13,68 @@ get_header(); ?>
 		<h2 class="title">Our latest and greatest</h2>
 		
 		<?php
-		// Query for 5 latest products
-		$latest_products = new WP_Query(array(
-			'post_type' => 'product',
-			'posts_per_page' => 5,
-			'orderby' => 'date',
-			'order' => 'DESC',
-			'post_status' => 'publish'
-		));
-		
-		if ($latest_products->have_posts()) : ?>
+		// Featured products first (max 10)
+		$featured_query = new WP_Query( array(
+			'post_type'      => 'product',
+			'posts_per_page' => 10,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'post_status'    => 'publish',
+			'meta_query'     => array(
+				array(
+					'key'     => '_featured',
+					'value'   => 'yes',
+					'compare' => '=',
+				),
+			),
+		) );
+		$featured_ids = wp_list_pluck( $featured_query->posts, 'ID' );
+		$need = 10 - count( $featured_ids );
+
+		// Fill remaining slots with most popular (by views), then latest if needed
+		$fill_posts = array();
+		if ( $need > 0 ) {
+			$popular_query = new WP_Query( array(
+				'post_type'      => 'product',
+				'posts_per_page' => $need,
+				'post__not_in'   => $featured_ids,
+				'post_status'    => 'publish',
+				'meta_key'       => '_product_views_count',
+				'orderby'        => 'meta_value_num',
+				'order'          => 'DESC',
+			) );
+			$fill_posts = $popular_query->posts;
+			$filled_ids = wp_list_pluck( $fill_posts, 'ID' );
+			$still_need = $need - count( $fill_posts );
+
+			// Fallback: if no products have views yet, use latest by date
+			if ( $still_need > 0 ) {
+				$latest_query = new WP_Query( array(
+					'post_type'      => 'product',
+					'posts_per_page' => $still_need,
+					'post__not_in'   => array_merge( $featured_ids, $filled_ids ),
+					'post_status'    => 'publish',
+					'orderby'        => 'date',
+					'order'          => 'DESC',
+				) );
+				$fill_posts = array_merge( $fill_posts, $latest_query->posts );
+			}
+		}
+
+		$latest_products = array_merge( $featured_query->posts, $fill_posts );
+		$has_products = ! empty( $latest_products );
+		?>
+		<?php if ( $has_products ) : ?>
 			<div class="products-grid">
-				<?php while ($latest_products->have_posts()) : $latest_products->the_post(); 
+				<?php foreach ( $latest_products as $post ) :
+					setup_postdata( $post );
 					global $product;
+					$product = wc_get_product( $post );
+					if ( ! $product ) {
+						continue;
+					}
 					$product_id = get_the_ID();
-					$product_image = get_the_post_thumbnail_url($product_id, 'medium');
+					$product_image = get_the_post_thumbnail_url( $product_id, 'medium' );
 					$product_title = get_the_title();
 					$product_price = $product->get_price_html();
 					$product_link = get_permalink();
@@ -45,7 +92,7 @@ get_header(); ?>
 							</div>
 						</a>
 					</div>
-				<?php endwhile; ?>
+				<?php endforeach; ?>
 			</div>
 			
 			<div class="see-all-products">
@@ -53,7 +100,7 @@ get_header(); ?>
 			</div>
 		<?php else : ?>
 			<p>No products found.</p>
-		<?php endif; 
+		<?php endif;
 		wp_reset_postdata(); ?>
 	</div>
 </section>

@@ -293,3 +293,56 @@ add_filter( 'query_vars', function( $vars ) {
     $vars[] = 'paged';
     return $vars;
 } );
+
+// ----------------------------
+// Product view tracking & featured product
+// ----------------------------
+
+/**
+ * Track product views for "most popular" sorting
+ */
+function veldrin_track_product_view() {
+    if ( ! veldrin_is_woocommerce_active() ) {
+        return;
+    }
+    if ( ! is_singular( 'product' ) || is_admin() || current_user_can( 'manage_options' ) ) {
+        return;
+    }
+    if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
+        return;
+    }
+    if ( wp_doing_ajax() ) {
+        return;
+    }
+    $product_id = get_queried_object_id();
+    if ( ! $product_id ) {
+        return;
+    }
+    $count = (int) get_post_meta( $product_id, '_product_views_count', true );
+    update_post_meta( $product_id, '_product_views_count', $count + 1 );
+}
+add_action( 'template_redirect', 'veldrin_track_product_view' );
+
+/**
+ * Add Featured product checkbox to product edit page (General tab)
+ */
+function veldrin_add_featured_checkbox() {
+    echo '<div class="options_group">';
+    woocommerce_wp_checkbox( array(
+        'id'          => '_featured',
+        'value'       => get_post_meta( get_the_ID(), '_featured', true ),
+        'label'       => __( 'Featured product', 'veldrin' ),
+        'description' => __( 'Show in "Our latest and greatest" section on the homepage.', 'veldrin' ),
+        'desc_tip'    => true,
+    ) );
+    echo '</div>';
+}
+add_action( 'woocommerce_product_options_general_product_data', 'veldrin_add_featured_checkbox' );
+
+/**
+ * Save Featured product checkbox
+ */
+function veldrin_save_featured_checkbox( $id, $post ) {
+    update_post_meta( $id, '_featured', isset( $_POST['_featured'] ) ? 'yes' : 'no' );
+}
+add_action( 'woocommerce_process_product_meta', 'veldrin_save_featured_checkbox', 10, 2 );
