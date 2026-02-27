@@ -13,25 +13,32 @@ get_header(); ?>
 		<h2 class="title">Our latest and greatest</h2>
 		
 		<?php
-		// Featured products first (max 10) - use WooCommerce API for correct featured list
-		// Clear cache so star/checkbox changes from admin are reflected immediately
-		delete_transient( 'wc_featured_products' );
-		$featured_ids_raw = function_exists( 'wc_get_featured_product_ids' ) ? wc_get_featured_product_ids() : array();
-		$featured_posts   = array();
-		if ( ! empty( $featured_ids_raw ) ) {
-			$featured_query = new WP_Query( array(
-				'post_type'      => 'product',
-				'posts_per_page' => 10,
-				'post__in'       => $featured_ids_raw,
-				'orderby'        => array(
-					'date' => 'DESC',
-					'ID'   => 'DESC',
+		// Featured products first (max 10) - product_visibility taxonomy (matches WooCommerce)
+		$featured_query = new WP_Query( array(
+			'post_type'      => 'product',
+			'posts_per_page' => 10,
+			'orderby'        => array(
+				'date' => 'DESC',
+				'ID'   => 'DESC',
+			),
+			'post_status'    => 'publish',
+			'tax_query'      => array(
+				'relation' => 'AND',
+				array(
+					'taxonomy' => 'product_visibility',
+					'field'    => 'slug',
+					'terms'    => array( 'featured' ),
 				),
-				'post_status'    => 'publish',
-			) );
-			$featured_posts = $featured_query->posts;
-		}
-		$featured_ids = wp_list_pluck( $featured_posts, 'ID' );
+				array(
+					'taxonomy' => 'product_visibility',
+					'field'    => 'slug',
+					'terms'    => array( 'exclude-from-catalog' ),
+					'operator' => 'NOT IN',
+				),
+			),
+		) );
+		$featured_posts = $featured_query->posts;
+		$featured_ids   = wp_list_pluck( $featured_posts, 'ID' );
 		$need = 10 - count( $featured_ids );
 
 		// Fill remaining slots with most popular (by views), then latest if needed

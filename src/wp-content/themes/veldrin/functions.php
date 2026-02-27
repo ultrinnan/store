@@ -346,21 +346,10 @@ add_action( 'woocommerce_product_options_general_product_data', 'veldrin_add_fea
  */
 function veldrin_save_featured_checkbox( $id, $post ) {
     $product = wc_get_product( $id );
-    if ( $product && isset( $_POST['_featured'] ) ) {
-        $product->set_featured( true );
-        $product->save();
-        delete_transient( 'wc_featured_products' );
-    } elseif ( $product ) {
-        $product->set_featured( false );
-        $product->save();
-        delete_transient( 'wc_featured_products' );
+    if ( ! $product ) {
+        return;
     }
+    $product->set_featured( isset( $_POST['_featured'] ) );
+    $product->save();
 }
 add_action( 'woocommerce_process_product_meta', 'veldrin_save_featured_checkbox', 10, 2 );
-
-/**
- * Clear featured products cache when product is updated (e.g. star clicked on products list)
- */
-add_action( 'woocommerce_update_product', function() {
-    delete_transient( 'wc_featured_products' );
-}, 10, 0 );
