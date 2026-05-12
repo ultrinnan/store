@@ -41,6 +41,19 @@ function custom_theme_setup() {
 }
 add_action('after_setup_theme', 'custom_theme_setup');
 
+/**
+ * Scope contact / CF7 form styles (see sass/components/_contacts.scss).
+ */
+add_filter(
+	'body_class',
+	function ( $classes ) {
+		if ( is_page( array( 'contacts', 'contact' ) ) ) {
+			$classes[] = 'contacts';
+		}
+		return $classes;
+	}
+);
+
 // Register sidebar(s)
 function veldrin_widgets_init() {
     register_sidebar( array(

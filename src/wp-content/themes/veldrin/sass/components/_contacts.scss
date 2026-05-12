@@ -1,70 +1,375 @@
+@use 'sass:color';
 @use '../helpers/index' as *;
 
-.contacts {
+@mixin veldrin-contact-text-input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 14px 16px;
+  min-height: 52px;
+  border: 2px solid color.adjust($black, $lightness: 55%);
+  border-radius: 10px;
+  background: $white;
+  color: $black;
+  font-size: 1rem;
+  font-family: $defaultFont;
+  line-height: 1.45;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &::placeholder {
+    color: color.adjust($black, $lightness: 45%);
+    opacity: 1;
+  }
+
+  &:hover {
+    border-color: color.adjust($black, $lightness: 40%);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: $gold;
+    box-shadow: 0 0 0 3px rgba($gold, 0.35);
+  }
+}
+
+@mixin veldrin-contact-textarea {
+  @include veldrin-contact-text-input;
+  // ~5 text rows; explicit height overrides Jetpack/HTML `rows="20"` (min-height alone does not)
+  $textarea-h: calc(7.25rem + 28px);
+  min-height: $textarea-h;
+  height: $textarea-h;
+  max-height: none;
+  resize: vertical;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+// Contact page (body.contacts via body_class in functions.php)
+body.contacts {
+  // ----- Jetpack Forms (Grunion) — /contacts/ uses this -----
+  .wp-block-jetpack-contact-form-container {
+    max-width: 520px;
+    margin: 0 auto 48px;
+  }
+
+  .wp-block-jetpack-contact-form {
+    padding: 0 !important;
+  }
+
+  .grunion-field-wrap {
+    margin: 0 0 1.15rem;
+  }
+
+  .grunion-field-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: $black;
+    line-height: 1.35;
+    margin-bottom: 8px;
+    font-family: $defaultFont;
+  }
+
+  .grunion-label-required {
+    font-weight: 500;
+    color: color.adjust($black, $lightness: 25%);
+    margin-left: 0.25em;
+  }
+
+  input.grunion-field {
+    @include veldrin-contact-text-input;
+  }
+
+  textarea.grunion-field {
+    @include veldrin-contact-textarea;
+  }
+
+  // Jetpack / theme clash: plugin may set light-on-light; keep errors readable dark red
+  $form-error-text: color.adjust($vine, $lightness: -8%);
+
+  .contact-form__input-error {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: $form-error-text !important;
+
+    [role='alert'],
+    span:not(.visually-hidden) {
+      color: $form-error-text !important;
+    }
+
+    .contact-form__warning-icon,
+    .contact-form__warning-icon i {
+      color: $form-error-text !important;
+    }
+
+    svg path {
+      fill: $form-error-text !important;
+    }
+  }
+
+  .contact-form__error {
+    margin: 1rem 0;
+    padding: 12px 14px;
+    border: 2px solid rgba($vine, 0.55);
+    border-radius: 10px;
+    background: rgba($vine, 0.08);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: $form-error-text !important;
+
+    &,
+    > span,
+    span[data-wp-text] {
+      color: $form-error-text !important;
+    }
+
+    .visually-hidden {
+      color: $form-error-text !important;
+    }
+
+    .contact-form__warning-icon,
+    .contact-form__warning-icon i {
+      color: $form-error-text !important;
+    }
+
+    ul {
+      margin: 0.75rem 0 0;
+      padding-left: 1.25rem;
+      list-style: disc;
+      color: $form-error-text !important;
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+      color: $form-error-text !important;
+    }
+
+    a {
+      color: $form-error-text !important;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 600;
+
+      &:hover,
+      &:focus-visible {
+        color: color.adjust($form-error-text, $lightness: -10%) !important;
+      }
+    }
+  }
+
+  .wp-block-jetpack-button {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 0.25rem;
+
+    button.wp-block-button__link {
+      @include veldrin-contact-text-input;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 52px;
+      width: 100%;
+      max-width: 100%;
+      padding: 14px 22px;
+      border: 2px solid $black !important;
+      border-radius: 999px !important;
+      background: $gold !important;
+      color: $black !important;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: $defaultFont;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: none !important;
+      text-decoration: none !important;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+
+      &:hover {
+        background: color.adjust($gold, $lightness: -10%) !important;
+        color: $black !important;
+        border-color: $black !important;
+      }
+
+      &:focus-visible {
+        outline: 2px solid $blue;
+        outline-offset: 3px;
+      }
+
+      &:disabled,
+      &[aria-disabled='true'] {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .contact-form-submission {
+    padding: 1rem 0;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  // ----- Contact Form 7 (if used elsewhere) -----
   .wpcf7 {
-    padding: 32px 0;
-    text-align: center;
+    max-width: 520px;
+    margin: 0 auto 48px;
+    padding: 0;
+    text-align: left;
+
+    form {
+      margin: 0;
+    }
+
+    p {
+      margin: 0 0 1.15rem;
+
+      &:last-of-type {
+        margin-bottom: 0;
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: $black;
+      line-height: 1.35;
+    }
+
+    .wpcf7-form-control-wrap {
+      display: block;
+      margin-top: 8px;
+    }
 
     input[type='text'],
     input[type='email'],
     input[type='tel'],
+    input[type='url'],
+    input[type='number'],
+    select,
     textarea {
-      border: 1px solid $black;
-      padding: 8px;
+      @include veldrin-contact-text-input;
+    }
+
+    textarea {
+      @include veldrin-contact-textarea;
+    }
+
+    select {
+      cursor: pointer;
+      min-height: 52px;
+    }
+
+    input[type='submit'],
+    input.submit,
+    .wpcf7-submit {
+      display: inline-block;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin-top: 4px;
+      padding: 14px 22px;
+      border: 2px solid $black;
+      border-radius: 999px;
+      background: $gold;
       color: $black;
-      font-size: 16px;
+      font-size: 1rem;
+      font-weight: 600;
       font-family: $defaultFont;
-      margin-bottom: 8px;
-      width: 50%;
-      &::placeholder,
-      &:-ms-input-placeholder,
-      &::-ms-input-placeholder {
-        /* Microsoft Edge */
-        font-family: $defaultFont;
-        font-style: normal;
-        font-weight: normal;
-        font-size: inherit;
-        color: #c4c4c4;
+      text-transform: none;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease;
+
+      &:hover {
+        background: color.adjust($gold, $lightness: -10%);
+        color: $black;
+        border-color: $black;
       }
-      &:focus,
-      &:active {
-        border: 1px solid $gold;
+
+      &:focus-visible {
+        outline: 2px solid $blue;
+        outline-offset: 3px;
+      }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
     }
 
-    .submit {
-      background: $black;
-      border: 1px solid $black;
-      color: $gold;
-      padding: 8px;
-      font-size: 16px;
-      font-family: $defaultFont;
+    .wpcf7-spinner {
+      margin: 12px auto 0;
+    }
+
+    .wpcf7-not-valid-tip {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: $form-error-text !important;
+    }
+
+    .wpcf7-response-output {
+      margin: 1.25rem 0 0;
+      padding: 12px 14px;
+      border: 2px solid color.adjust($black, $lightness: 55%);
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .wpcf7-mail-sent-ok {
+      border-color: color.adjust($blue, $lightness: 25%);
+      background: rgba($blue, 0.08);
+      color: $black;
+    }
+
+    .wpcf7-validation-errors,
+    .wpcf7-acceptance-missing,
+    .wpcf7-mail-sent-ng {
+      border-color: rgba($vine, 0.45);
+      background: rgba($vine, 0.06);
+    }
+
+    .wpcf7-list-item {
+      margin: 0;
+    }
+
+    .wpcf7-acceptance {
+      .wpcf7-list-item label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-weight: 500;
+      }
+
+      input[type='checkbox'] {
+        width: auto;
+        margin: 4px 0 0;
+        flex-shrink: 0;
+      }
     }
   }
 }
 
-@media screen and (max-width: 1440px) {
-  // max-width: 1440px
-}
-
-@media screen and (max-width: 1024px) {
-  // max-width: 1024px
-}
-
-@media screen and (max-width: 768px) {
-  // max-width: 768px
-}
-
 @media screen and (max-width: 590px) {
-  // max-width: 590px
-  .contacts {
+  body.contacts {
+    .wp-block-jetpack-contact-form-container,
     .wpcf7 {
-      input[type='text'],
-      input[type='email'],
-      input[type='tel'],
-      textarea {
-        width: 100%;
-      }
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
     }
   }
 }
