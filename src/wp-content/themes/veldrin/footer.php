@@ -41,6 +41,8 @@
   </div>
 </footer>
 
+<?php get_template_part( 'partials/feedback-popup' ); ?>
+
 <?php wp_footer(); ?>
 
 <?php

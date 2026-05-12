@@ -56,4 +56,50 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  // Feedback / contact prompt (bottom-right, delayed)
+  var feedbackPopup = document.getElementById('veldrin-feedback-popup');
+  if (feedbackPopup) {
+    var storageKey = 'veldrin_feedback_popup_dismissed';
+    if (sessionStorage.getItem(storageKey)) {
+      return;
+    }
+
+    var showPopup = function() {
+      feedbackPopup.removeAttribute('hidden');
+      feedbackPopup.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function() {
+        feedbackPopup.classList.add('is-visible');
+      });
+    };
+
+    var hidePopup = function() {
+      feedbackPopup.classList.remove('is-visible');
+      feedbackPopup.setAttribute('aria-hidden', 'true');
+      sessionStorage.setItem(storageKey, '1');
+      window.setTimeout(function() {
+        feedbackPopup.setAttribute('hidden', '');
+      }, 400);
+    };
+
+    var closeBtn = feedbackPopup.querySelector('.veldrin-feedback-popup__close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', hidePopup);
+    }
+
+    var cta = feedbackPopup.querySelector('.veldrin-feedback-popup__cta');
+    if (cta) {
+      cta.addEventListener('click', function() {
+        sessionStorage.setItem(storageKey, '1');
+      });
+    }
+
+    document.addEventListener('keydown', function onEscape(e) {
+      if (e.key === 'Escape' && feedbackPopup.classList.contains('is-visible')) {
+        hidePopup();
+      }
+    });
+
+    window.setTimeout(showPopup, 5000);
+  }
 });

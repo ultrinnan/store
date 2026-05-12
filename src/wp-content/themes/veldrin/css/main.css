@@ -1931,3 +1931,75 @@ header .menu_wrapper {
     max-width: 280px;
   }
 }
+.veldrin-feedback-popup {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 99990;
+  max-width: min(320px, 100vw - 32px);
+  padding: 16px 40px 16px 16px;
+  background: #fdf6e3;
+  color: #2e1f17;
+  border: 2px solid #ffcc00;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(46, 31, 23, 0.15);
+  transform: translate3d(120%, 120%, 0);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, visibility 0s linear 0.45s;
+}
+.veldrin-feedback-popup.is-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, visibility 0s linear 0s;
+}
+.veldrin-feedback-popup__close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffcc00;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.veldrin-feedback-popup__close:hover, .veldrin-feedback-popup__close:focus-visible {
+  color: #8b0000;
+}
+.veldrin-feedback-popup__text {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.veldrin-feedback-popup__cta.button {
+  display: inline-block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  text-transform: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffcc00;
+  color: #2e1f17;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.veldrin-feedback-popup__cta.button:hover {
+  background: rgb(204, 163.2, 0);
+  color: #2e1f17;
+  text-decoration: none;
+}
+.veldrin-feedback-popup__cta.button:focus-visible {
+  outline: 2px solid #0057b8;
+  outline-offset: 2px;
+}
