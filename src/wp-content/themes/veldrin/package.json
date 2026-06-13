@@ -19,7 +19,7 @@
   ],
   "devDependencies": {
     "cross-env": "^10.1.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.1",
     "gulp": "^4.0.2",
     "gulp-autoprefixer": "^8.0.0",
     "gulp-clean-css": "^4.3.0",
