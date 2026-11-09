@@ -21,6 +21,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Load Composer autoloader if available, otherwise use simple PSR-4 autoloader.
+ */
+$autoload_paths = array(
+	__DIR__ . '/vendor/autoload.php',  // Composer
+	__DIR__ . '/src/',                 // Simple PSR-4 fallback
+);
+
+foreach ( $autoload_paths as $path ) {
+	if ( file_exists( $path ) ) {
+		if ( is_file( $path ) ) {
+			require_once $path;
+		} else {
+			// Simple PSR-4 autoloader for src/ directory
+			spl_autoload_register( function( $class ) {
+				$prefix = 'FPro\\BearpawDealer\\';
+				$base_dir = __DIR__ . '/src/';
+				
+				$len = strlen( $prefix );
+				if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+					return;
+				}
+				
+				$relative_class = substr( $class, $len );
+				$file = $base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
+				
+				if ( file_exists( $file ) ) {
+					require_once $file;
+				}
+			} );
+		}
+		break;
+	}
+}
+
+/**
  * Check if WooCommerce is active
  */
 if ( ! function_exists( 'f_bearpaw_is_woocommerce_active' ) ) {
@@ -110,6 +145,9 @@ class F_Bearpaw_Dealer {
 		add_action( 'admin_menu', array( $this, 'add_admin_page' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		
+		// Enqueue admin assets
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		
 		// Add script to pre-fill product form when opened from missing products list
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_product_form_prefill_script' ) );
 		
@@ -125,9 +163,49 @@ class F_Bearpaw_Dealer {
 	public function woocommerce_missing_notice() {
 		?>
 		<div class="notice notice-error">
-			<p><strong>F-PRO Bearpaw Dealer:</strong> WooCommerce plugin is required for this plugin to work. Please install and activate WooCommerce.</p>
+			<p><strong>F-PRO Bearpaw Dealer:</strong> <?php esc_html_e( 'WooCommerce plugin is required for this plugin to work. Please install and activate WooCommerce.', 'f-pro-bearpaw-dealer' ); ?></p>
 		</div>
 		<?php
+	}
+	
+	/**
+	 * Enqueue admin CSS and JS assets
+	 *
+	 * @param string $hook Current admin page hook.
+	 */
+	public function enqueue_admin_assets( $hook ) {
+		// Only load on our admin page
+		if ( $hook !== 'toplevel_page_f-bearpaw-dealer' ) {
+			return;
+		}
+		
+		$plugin_url = plugin_dir_url( __FILE__ );
+		$version = defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : '1.0.0';
+		
+		// Enqueue CSS
+		wp_enqueue_style(
+			'f-bearpaw-dealer-admin',
+			$plugin_url . 'assets/css/admin.css',
+			array(),
+			$version
+		);
+		
+		// Enqueue JS
+		wp_enqueue_script(
+			'f-bearpaw-dealer-admin',
+			$plugin_url . 'assets/js/admin.js',
+			array( 'jquery' ),
+			$version,
+			true
+		);
+		
+		// Localize script with AJAX URL and nonce
+		$nonce = wp_create_nonce( 'f_bearpaw_download_products' );
+		wp_localize_script( 'f-bearpaw-dealer-admin', 'fBearpawData', array(
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+			'nonce' => $nonce,
+			'step3Url' => add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ),
+		) );
 	}
 	
 	/**
@@ -394,7 +472,7 @@ class F_Bearpaw_Dealer {
 	}
 	
 	/**
-	 * Parse cURL command and extract URL, cookies, and headers
+	 * Parse cURL command using the CurlParser class.
 	 *
 	 * @param string $curl_command cURL command string
 	 * @return array|false Parsed data (url, cookies, headers) or false on failure
@@ -403,26 +481,31 @@ class F_Bearpaw_Dealer {
 		if ( empty( $curl_command ) ) {
 			return false;
 		}
-		
+
+		if ( class_exists( 'FPro\\BearpawDealer\\API\\CurlParser' ) ) {
+			return \FPro\BearpawDealer\API\CurlParser::parse( $curl_command );
+		}
+
+		// Fallback to old regex-based parser
 		$result = array(
 			'url' => '',
 			'cookies' => '',
 			'headers' => array(),
 		);
-		
+
 		// Extract URL (between single quotes after curl)
 		if ( preg_match( "/curl\s+['\"]([^'\"]+)['\"]/", $curl_command, $matches ) ) {
 			$result['url'] = $matches[1];
 		} elseif ( preg_match( "/curl\s+([^\s]+)/", $curl_command, $matches ) ) {
 			$result['url'] = $matches[1];
 		}
-		
+
 		// Extract cookies from -b or --cookie parameter
-		if ( preg_match( "/-b\s+['\"]([^'\"]+)['\"]/", $curl_command, $matches ) || 
+		if ( preg_match( "/-b\s+['\"]([^'\"]+)['\"]/", $curl_command, $matches ) ||
 		     preg_match( "/--cookie\s+['\"]([^'\"]+)['\"]/", $curl_command, $matches ) ) {
 			$result['cookies'] = $matches[1];
 		}
-		
+
 		// Extract all headers from -H parameters
 		preg_match_all( "/-H\s+['\"]([^'\"]+)['\"]/", $curl_command, $header_matches );
 		if ( ! empty( $header_matches[1] ) ) {
@@ -438,7 +521,7 @@ class F_Bearpaw_Dealer {
 				}
 			}
 		}
-		
+
 		// If no cookies found in -b, try to extract from Cookie header
 		if ( empty( $result['cookies'] ) ) {
 			foreach ( $result['headers'] as $name => $value ) {
@@ -449,7 +532,7 @@ class F_Bearpaw_Dealer {
 				}
 			}
 		}
-		
+
 		return ! empty( $result['url'] ) ? $result : false;
 	}
 	
@@ -523,7 +606,7 @@ class F_Bearpaw_Dealer {
 	}
 	
 	/**
-	 * Download all products from source
+	 * Download all products from source using BearpawClient.
 	 * 
 	 * Parses cURL command, fetches all products with pagination support,
 	 * and saves them to a temporary JSON file for later processing.
@@ -543,11 +626,36 @@ class F_Bearpaw_Dealer {
 			);
 		}
 		
+		// Validate for Bearpaw API
+		if ( class_exists( 'FPro\\BearpawDealer\\API\\CurlParser' ) && 
+		     ! \FPro\BearpawDealer\API\CurlParser::validate_for_bearpaw( $parsed ) ) {
+			return array(
+				'success' => false,
+				'error' => 'Invalid cURL command for Bearpaw API (missing cookies or wrong domain)',
+			);
+		}
+		
 		// Extract base URL (without query parameters for pagination)
 		$base_url = strtok( $parsed['url'], '?' );
 		
-		// Get all products with pagination
-		$all_products = $this->get_all_products_paginated( $base_url, $parsed['cookies'], $parsed['headers'] );
+		// Create BearpawClient and fetch all products
+		if ( class_exists( 'FPro\\BearpawDealer\\API\\BearpawClient' ) ) {
+			$client = $source_name === 'B2B' 
+				? \FPro\BearpawDealer\API\BearpawClient::for_b2b( $parsed['cookies'], $parsed['headers'] )
+				: \FPro\BearpawDealer\API\BearpawClient::for_retail( $parsed['cookies'], $parsed['headers'] );
+			
+			try {
+				$all_products = $client->get_all_products();
+			} catch ( \Exception $e ) {
+				return array(
+					'success' => false,
+					'error' => 'API error: ' . $e->getMessage(),
+				);
+			}
+		} else {
+			// Fallback to old method
+			$all_products = $this->get_all_products_paginated( $base_url, $parsed['cookies'], $parsed['headers'] );
+		}
 		
 		if ( empty( $all_products ) ) {
 			return array(
@@ -626,8 +734,9 @@ class F_Bearpaw_Dealer {
 	}
 	
 	/**
-	 * Get all products from Bearpaw API with pagination
+	 * Get all products from Bearpaw API with pagination (DEPRECATED - use BearpawClient)
 	 *
+	 * @deprecated Use BearpawClient::get_all_products() instead.
 	 * @param string $base_url Base API URL
 	 * @param string $cookies Cookies string
 	 * @param array  $headers Additional headers
@@ -1219,18 +1328,26 @@ class F_Bearpaw_Dealer {
 			'retail_products_count' => 0,
 		);
 		
-		// Check B2B portal
+		// Check B2B portal using BearpawClient
 		if ( ! empty( $b2b_curl ) ) {
 			$b2b_parsed = $this->parse_curl_command( $b2b_curl );
 			if ( $b2b_parsed && ! empty( $b2b_parsed['url'] ) && ! empty( $b2b_parsed['cookies'] ) ) {
-				// Extract base URL for products.json
-				$b2b_url = 'https://www.b2bportal.bearpaw-products.de/products.json';
-				$b2b_data = $this->get_bearpaw_json( $b2b_url, $b2b_parsed['cookies'], $b2b_parsed['headers'] );
-				if ( $b2b_data !== false && isset( $b2b_data['products'] ) ) {
-					$status['b2b_accessible'] = true;
-					$status['b2b_products_count'] = count( $b2b_data['products'] );
+				if ( class_exists( 'FPro\\BearpawDealer\\API\\BearpawClient' ) ) {
+					$client = \FPro\BearpawDealer\API\BearpawClient::for_b2b( $b2b_parsed['cookies'], $b2b_parsed['headers'] );
+					$result = $client->test_connection();
+					$status['b2b_accessible'] = $result['accessible'];
+					$status['b2b_error'] = $result['error'];
+					$status['b2b_products_count'] = $result['products_count'];
 				} else {
-					$status['b2b_error'] = 'Failed to access B2B JSON or invalid response';
+					// Fallback
+					$b2b_url = 'https://www.b2bportal.bearpaw-products.de/products.json';
+					$b2b_data = $this->get_bearpaw_json( $b2b_url, $b2b_parsed['cookies'], $b2b_parsed['headers'] );
+					if ( $b2b_data !== false && isset( $b2b_data['products'] ) ) {
+						$status['b2b_accessible'] = true;
+						$status['b2b_products_count'] = count( $b2b_data['products'] );
+					} else {
+						$status['b2b_error'] = 'Failed to access B2B JSON or invalid response';
+					}
 				}
 			} else {
 				$status['b2b_error'] = 'Failed to parse B2B cURL command';
@@ -1239,18 +1356,26 @@ class F_Bearpaw_Dealer {
 			$status['b2b_error'] = 'B2B cURL command not configured';
 		}
 		
-		// Check retail site
+		// Check retail site using BearpawClient
 		if ( ! empty( $retail_curl ) ) {
 			$retail_parsed = $this->parse_curl_command( $retail_curl );
 			if ( $retail_parsed && ! empty( $retail_parsed['url'] ) && ! empty( $retail_parsed['cookies'] ) ) {
-				// Extract base URL for products.json
-				$retail_url = 'https://bearpaw-products.com/products.json';
-				$retail_data = $this->get_bearpaw_json( $retail_url, $retail_parsed['cookies'], $retail_parsed['headers'] );
-				if ( $retail_data !== false && isset( $retail_data['products'] ) ) {
-					$status['retail_accessible'] = true;
-					$status['retail_products_count'] = count( $retail_data['products'] );
+				if ( class_exists( 'FPro\\BearpawDealer\\API\\BearpawClient' ) ) {
+					$client = \FPro\BearpawDealer\API\BearpawClient::for_retail( $retail_parsed['cookies'], $retail_parsed['headers'] );
+					$result = $client->test_connection();
+					$status['retail_accessible'] = $result['accessible'];
+					$status['retail_error'] = $result['error'];
+					$status['retail_products_count'] = $result['products_count'];
 				} else {
-					$status['retail_error'] = 'Failed to access Retail JSON or invalid response';
+					// Fallback
+					$retail_url = 'https://bearpaw-products.com/products.json';
+					$retail_data = $this->get_bearpaw_json( $retail_url, $retail_parsed['cookies'], $retail_parsed['headers'] );
+					if ( $retail_data !== false && isset( $retail_data['products'] ) ) {
+						$status['retail_accessible'] = true;
+						$status['retail_products_count'] = count( $retail_data['products'] );
+					} else {
+						$status['retail_error'] = 'Failed to access Retail JSON or invalid response';
+					}
 				}
 			} else {
 				$status['retail_error'] = 'Failed to parse Retail cURL command';
@@ -1526,8 +1651,15 @@ class F_Bearpaw_Dealer {
 		
 		// Load pricing settings
 		$settings = get_option( $this->option_name, array() );
-		$margin_percent = isset( $settings['margin_percent'] ) ? floatval( $settings['margin_percent'] ) : 20.0;
-		$discount_percent = isset( $settings['discount_percent'] ) ? floatval( $settings['discount_percent'] ) : 10.0;
+		
+		// Create pricing calculator from settings
+		if ( class_exists( 'FPro\\BearpawDealer\\Domain\\PricingCalculator' ) ) {
+			$calculator = \FPro\BearpawDealer\Domain\PricingCalculator::from_settings( $settings );
+		} else {
+			// Fallback if class not loaded
+			$margin_percent = isset( $settings['margin_percent'] ) ? floatval( $settings['margin_percent'] ) : 20.0;
+			$discount_percent = isset( $settings['discount_percent'] ) ? floatval( $settings['discount_percent'] ) : 10.0;
+		}
 		
 		// Track seen SKUs to avoid duplicates
 		$seen_skus = array();
@@ -1585,30 +1717,30 @@ class F_Bearpaw_Dealer {
 						$b2b_product_url = 'https://www.b2bportal.bearpaw-products.de/products/' . $product_id;
 					}
 					
-					// Calculate recommended price using same logic as price update
+					// Calculate recommended price using PricingCalculator
 					$calculated_price = 0;
 					if ( $first_price > 0 ) {
 						$b2b_price = $first_price;
 						$retail_price = isset( $retail_prices_by_sku[ $first_sku ] ) ? $retail_prices_by_sku[ $first_sku ] : 0;
 						
-						// Calculate new price: B2B price * (1 + margin_percent / 100)
-						$desired_price = $b2b_price * ( 1 + $margin_percent / 100 );
-						
-						// But it should be at most (retail_price * (1 - discount_percent / 100))
-						$max_allowed_price = 0;
-						if ( $retail_price > 0 ) {
-							$max_allowed_price = $retail_price * ( 1 - $discount_percent / 100 );
-						}
-						
-						// Use the lower of calculated price or maximum allowed price
-						if ( $max_allowed_price > 0 && $desired_price > $max_allowed_price ) {
-							$calculated_price = $max_allowed_price;
+						if ( class_exists( 'FPro\\BearpawDealer\\Domain\\PricingCalculator' ) ) {
+							$calculated_price = $calculator->calculate_price( $b2b_price, $retail_price );
 						} else {
-							$calculated_price = $desired_price;
+							// Fallback inline calculation
+							$desired_price = $b2b_price * ( 1 + $margin_percent / 100 );
+							$max_allowed_price = 0;
+							if ( $retail_price > 0 ) {
+								$max_allowed_price = $retail_price * ( 1 - $discount_percent / 100 );
+							}
+							
+							if ( $max_allowed_price > 0 && $desired_price > $max_allowed_price ) {
+								$calculated_price = $max_allowed_price;
+							} else {
+								$calculated_price = $desired_price;
+							}
+							
+							$calculated_price = round( $calculated_price, 2 );
 						}
-						
-						// Round to 2 decimal places
-						$calculated_price = round( $calculated_price, 2 );
 					}
 					
 					$result['products'][] = array(
@@ -1655,9 +1787,16 @@ class F_Bearpaw_Dealer {
 		
 		// Load settings
 		$settings = get_option( $this->option_name, array() );
-		$margin_percent = isset( $settings['margin_percent'] ) ? floatval( $settings['margin_percent'] ) : 20.0;
-		$discount_percent = isset( $settings['discount_percent'] ) ? floatval( $settings['discount_percent'] ) : 10.0;
-		$price_change_threshold = isset( $settings['price_change_threshold'] ) ? floatval( $settings['price_change_threshold'] ) : 0.2;
+		
+		// Create pricing calculator from settings
+		if ( class_exists( 'FPro\\BearpawDealer\\Domain\\PricingCalculator' ) ) {
+			$calculator = \FPro\BearpawDealer\Domain\PricingCalculator::from_settings( $settings );
+		} else {
+			// Fallback if class not loaded
+			$margin_percent = isset( $settings['margin_percent'] ) ? floatval( $settings['margin_percent'] ) : 20.0;
+			$discount_percent = isset( $settings['discount_percent'] ) ? floatval( $settings['discount_percent'] ) : 10.0;
+			$price_change_threshold = isset( $settings['price_change_threshold'] ) ? floatval( $settings['price_change_threshold'] ) : 0.2;
+		}
 		
 		// Load JSON files
 		$b2b_data = $this->load_json_from_temp( 'b2b_products.json' );
@@ -1751,54 +1890,81 @@ class F_Bearpaw_Dealer {
 					continue;
 				}
 				
-				// Calculate new price
-				// Ціна має бути на 20% вище B2B (маржа)
-				$desired_price = $b2b_price * ( 1 + $margin_percent / 100 );
-				
-				// Але має бути мінімум на 10% нижче роздрібної (щоб конкурувати)
-				$max_allowed_price = 0;
-				if ( $retail_price > 0 ) {
-					$max_allowed_price = $retail_price * ( 1 - $discount_percent / 100 );
-				}
-				
-				// Використовуємо меншу з двох: бажана ціна або максимально дозволена
-				if ( $max_allowed_price > 0 && $desired_price > $max_allowed_price ) {
-					$calculated_price = $max_allowed_price;
-				} else {
-					$calculated_price = $desired_price;
-				}
-				
-				// Round to 2 decimal places
-				$new_price = round( $calculated_price, 2 );
-				
-				// Get current price
-				$current_price = $product->get_regular_price();
-				if ( ! $current_price ) {
-					$current_price = $product->get_price();
-				}
-				$current_price = floatval( $current_price );
-				
-				// Update if price changed by more than threshold
-				if ( abs( $current_price - $new_price ) > $price_change_threshold ) {
-					$product->set_regular_price( $new_price );
-					$product->set_price( $new_price );
+				// Calculate new price using PricingCalculator
+				if ( class_exists( 'FPro\\BearpawDealer\\Domain\\PricingCalculator' ) ) {
+					$new_price = $calculator->calculate_price( $b2b_price, $retail_price );
 					
-					// Save product
-					if ( $product->save() ) {
-						$result['updated']++;
-						$result['details'][] = array(
-							'product_id' => $product_id,
-							'sku' => $sku_clean,
-							'old_price' => $current_price,
-							'new_price' => $new_price,
-							'b2b_price' => $b2b_price,
-							'retail_price' => $retail_price,
-						);
+					// Get current price
+					$current_price = $product->get_regular_price();
+					if ( ! $current_price ) {
+						$current_price = $product->get_price();
+					}
+					$current_price = floatval( $current_price );
+					
+					// Update if price changed by more than threshold
+					if ( $calculator->should_update_price( $current_price, $new_price ) ) {
+						$product->set_regular_price( $new_price );
+						$product->set_price( $new_price );
+						
+						// Save product
+						if ( $product->save() ) {
+							$result['updated']++;
+							$result['details'][] = array(
+								'product_id' => $product_id,
+								'sku' => $sku_clean,
+								'old_price' => $current_price,
+								'new_price' => $new_price,
+								'b2b_price' => $b2b_price,
+								'retail_price' => $retail_price,
+							);
+						} else {
+							$result['errors']++;
+						}
 					} else {
-						$result['errors']++;
+						$result['skipped']++;
 					}
 				} else {
-					$result['skipped']++;
+					// Fallback inline calculation
+					$desired_price = $b2b_price * ( 1 + $margin_percent / 100 );
+					$max_allowed_price = 0;
+					if ( $retail_price > 0 ) {
+						$max_allowed_price = $retail_price * ( 1 - $discount_percent / 100 );
+					}
+					
+					if ( $max_allowed_price > 0 && $desired_price > $max_allowed_price ) {
+						$calculated_price = $max_allowed_price;
+					} else {
+						$calculated_price = $desired_price;
+					}
+					
+					$new_price = round( $calculated_price, 2 );
+					
+					$current_price = $product->get_regular_price();
+					if ( ! $current_price ) {
+						$current_price = $product->get_price();
+					}
+					$current_price = floatval( $current_price );
+					
+					if ( abs( $current_price - $new_price ) > $price_change_threshold ) {
+						$product->set_regular_price( $new_price );
+						$product->set_price( $new_price );
+						
+						if ( $product->save() ) {
+							$result['updated']++;
+							$result['details'][] = array(
+								'product_id' => $product_id,
+								'sku' => $sku_clean,
+								'old_price' => $current_price,
+								'new_price' => $new_price,
+								'b2b_price' => $b2b_price,
+								'retail_price' => $retail_price,
+							);
+						} else {
+							$result['errors']++;
+						}
+					} else {
+						$result['skipped']++;
+					}
 				}
 			}
 			wp_reset_postdata();
@@ -2014,88 +2180,6 @@ class F_Bearpaw_Dealer {
 		}
 		
 		?>
-		<style>
-			.f-bearpaw-accordion {
-				margin-top: 20px;
-			}
-			.f-bearpaw-accordion-item {
-				background: #fff;
-				border: 1px solid #c3c4c7;
-				box-shadow: 0 1px 1px rgba(0,0,0,.04);
-				margin-bottom: 10px;
-			}
-			.f-bearpaw-accordion-header {
-				padding: 15px 20px;
-				cursor: pointer;
-				user-select: none;
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				background: #f6f7f7;
-				border-bottom: 1px solid #c3c4c7;
-			}
-			.f-bearpaw-accordion-header:hover {
-				background: #f0f0f1;
-			}
-			.f-bearpaw-accordion-header h2 {
-				margin: 0;
-				font-size: 16px;
-				display: flex;
-				align-items: center;
-				gap: 10px;
-			}
-			.f-bearpaw-accordion-header .step-number {
-				display: inline-block;
-				width: 24px;
-				height: 24px;
-				line-height: 24px;
-				text-align: center;
-				background: #2271b1;
-				color: #fff;
-				border-radius: 50%;
-				font-weight: bold;
-				font-size: 12px;
-			}
-			.f-bearpaw-accordion-header .step-status {
-				font-size: 12px;
-				color: #646970;
-				font-weight: normal;
-			}
-			.f-bearpaw-accordion-header.completed .step-number {
-				background: #00a32a;
-			}
-			.f-bearpaw-accordion-content {
-				padding: 20px;
-				display: none;
-			}
-			.f-bearpaw-accordion-item.active .f-bearpaw-accordion-content {
-				display: block;
-			}
-			.f-bearpaw-accordion-toggle {
-				font-size: 18px;
-				color: #646970;
-			}
-			.f-bearpaw-progress {
-				margin: 20px 0;
-				padding: 15px;
-				background: #f0f6fc;
-				border-left: 4px solid #2271b1;
-			}
-			.f-bearpaw-progress-bar {
-				width: 100%;
-				height: 20px;
-				background: #ddd;
-				border-radius: 10px;
-				overflow: hidden;
-				margin: 10px 0;
-			}
-			.f-bearpaw-progress-fill {
-				height: 100%;
-				background: #2271b1;
-				width: 0%;
-				transition: width 0.3s ease;
-			}
-		</style>
 		<div class="wrap">
 			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 			
@@ -2762,271 +2846,12 @@ class F_Bearpaw_Dealer {
 		</div>
 		
 		<script>
-		// Make ajaxurl available
-		var ajaxurl = '<?php echo admin_url( 'admin-ajax.php' ); ?>';
-		// Get nonce from hidden input
-		var downloadNonce = document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '';
-		
-		function toggleAccordion(step) {
-			// Close all accordion items
-			document.querySelectorAll('.f-bearpaw-accordion-item').forEach(function(item) {
-				item.classList.remove('active');
-				var toggle = item.querySelector('.f-bearpaw-accordion-toggle');
-				if (toggle) {
-					toggle.textContent = '+';
-				}
-			});
-			
-			// Open selected step
-			var targetItem = document.querySelector('.f-bearpaw-accordion-item:nth-child(' + step + ')');
-			if (targetItem && !targetItem.classList.contains('disabled')) {
-				targetItem.classList.add('active');
-				var toggle = targetItem.querySelector('.f-bearpaw-accordion-toggle');
-				if (toggle) {
-					toggle.textContent = '−';
-				}
-			}
-		}
-		
-		function handleStep1Save(event) {
-			// Form will submit normally, but we'll handle the accordion on page reload
-			// Add a hidden input to indicate step 1 was saved
-			var form = document.getElementById('step1-form');
-			if (form) {
-				var input = document.createElement('input');
-				input.type = 'hidden';
-				input.name = 'step1_saved';
-				input.value = '1';
-				form.appendChild(input);
-			}
-		}
-		
-		function handleStep2Download(event) {
-			event.preventDefault();
-			
-			var form = document.getElementById('step2-form');
-			if (!form) return;
-			
-			var button = form.querySelector('button[type="submit"]');
-			if (button) {
-				button.disabled = true;
-				button.textContent = '⏳ Starting download...';
-			}
-			
-			// Clear previous progress
-			var existingContainer = document.getElementById('download-progress-container');
-			if (existingContainer) {
-				existingContainer.remove();
-			}
-			
-			// Create progress container
-			var progressContainer = document.createElement('div');
-			progressContainer.id = 'download-progress-container';
-			progressContainer.style.cssText = 'margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0,0,0,.04);';
-			progressContainer.innerHTML = '<h3 style="margin-top: 0;">Download Progress</h3>' +
-				'<div id="b2b-progress" style="margin-bottom: 20px;"></div>' +
-				'<div id="retail-progress" style="margin-bottom: 20px;"></div>' +
-				'<div class="f-bearpaw-progress-bar"><div class="f-bearpaw-progress-fill" id="overall-progress-bar" style="width: 0%;"></div></div>' +
-				'<p id="overall-progress-text" style="margin-top: 10px; color: #646970;">Initializing...</p>';
-			form.insertAdjacentElement('afterend', progressContainer);
-			
-			// Get nonce from form or hidden input
-			var nonce = downloadNonce || (form.querySelector('input[name="_wpnonce"]') ? form.querySelector('input[name="_wpnonce"]').value : '');
-			
-			if (!nonce) {
-				alert('Security token missing. Please refresh the page and try again.');
-				if (button) button.disabled = false;
-				return;
-			}
-			
-			// Clear progress via AJAX first
-			jQuery.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'f_bearpaw_clear_progress',
-					nonce: nonce,
-					source: '' // Clear both
-				},
-				success: function() {
-					// Start downloading both sources sequentially (B2B first, then Retail)
-					downloadSource('B2B', function() {
-						downloadSource('Retail', function() {
-							// Both downloads completed
-							if (button) {
-								button.textContent = '✅ Download Completed';
-							}
-							document.getElementById('overall-progress-text').textContent = '✅ All downloads completed! Page will reload in 3 seconds...';
-							setTimeout(function() {
-								window.location.href = '<?php echo add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ); ?>';
-							}, 3000);
-						});
-					});
-				},
-				error: function() {
-					// Continue anyway
-					downloadSource('B2B', function() {
-						downloadSource('Retail', function() {
-							if (button) {
-								button.textContent = '✅ Download Completed';
-							}
-							document.getElementById('overall-progress-text').textContent = '✅ All downloads completed! Page will reload in 3 seconds...';
-							setTimeout(function() {
-								window.location.href = '<?php echo add_query_arg( 'open_step', '3', admin_url( 'admin.php?page=f-bearpaw-dealer' ) ); ?>';
-							}, 3000);
-						});
-					});
-				}
-			});
-		}
-		
-		function downloadSource(source, callback) {
-			var progressDiv = document.getElementById(source.toLowerCase() + '-progress');
-			progressDiv.innerHTML = '<p><strong>' + source + ':</strong> <span id="' + source.toLowerCase() + '-status">Starting...</span></p>' +
-				'<div class="f-bearpaw-progress-bar"><div class="f-bearpaw-progress-fill" id="' + source.toLowerCase() + '-progress-bar" style="width: 0%;"></div></div>' +
-				'<p id="' + source.toLowerCase() + '-progress-text" style="font-size: 12px; color: #646970; margin-top: 5px;">Preparing...</p>';
-			
-			var startPage = 1;
-			var totalProducts = 0;
-			var totalPages = 0;
-			
-			function downloadChunk() {
-				var statusEl = document.getElementById(source.toLowerCase() + '-status');
-				var progressBar = document.getElementById(source.toLowerCase() + '-progress-bar');
-				var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
-				var overallProgressBar = document.getElementById('overall-progress-bar');
-				var overallProgressText = document.getElementById('overall-progress-text');
-				
-				var nonce = downloadNonce || (document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '') || 
-					(document.querySelector('input[name="_wpnonce"]') ? document.querySelector('input[name="_wpnonce"]').value : '');
-				
-				jQuery.ajax({
-					url: ajaxurl,
-					type: 'POST',
-					data: {
-						action: 'f_bearpaw_download_chunk',
-						nonce: nonce,
-						source: source,
-						start_page: startPage
-					},
-					dataType: 'json',
-					success: function(response) {
-						if (response.success && response.data) {
-							var data = response.data;
-							totalProducts = data.total_products || 0;
-							totalPages = data.total_pages_downloaded || 0;
-							
-							// Update source-specific progress (estimate based on pages)
-							var estimatedTotalPages = data.has_more ? totalPages + 10 : totalPages; // Rough estimate
-							var sourceProgress = estimatedTotalPages > 0 ? Math.min(90, (totalPages / estimatedTotalPages) * 100) : 50;
-							if (progressBar) progressBar.style.width = sourceProgress + '%';
-							
-							if (statusEl) {
-								statusEl.textContent = data.has_more ? 
-									'Downloading... ' + totalPages + ' pages, ' + totalProducts.toLocaleString() + ' products' :
-									'✅ Completed: ' + totalPages + ' pages, ' + totalProducts.toLocaleString() + ' products';
-							}
-							if (progressText) {
-								progressText.textContent = 'Pages downloaded: ' + totalPages + ' | Products: ' + totalProducts.toLocaleString() + 
-									(data.has_more ? ' | Loading more...' : ' | Finalizing...');
-							}
-							
-							// Update overall progress (B2B is 50%, Retail is 50%)
-							var overallProgress = 0;
-							if (source === 'B2B') {
-								overallProgress = data.has_more ? Math.min(45, sourceProgress * 0.5) : 50;
-							} else {
-								overallProgress = data.has_more ? Math.min(95, 50 + (sourceProgress * 0.5)) : 100;
-							}
-							if (overallProgressBar) overallProgressBar.style.width = overallProgress + '%';
-							
-							if (data.has_more) {
-								// Continue with next chunk
-								startPage = data.current_page;
-								setTimeout(downloadChunk, 500); // Small delay between chunks
-							} else {
-								// Finalize this source
-								if (progressBar) progressBar.style.width = '100%';
-								finalizeDownload(source, function() {
-									if (callback) callback();
-								});
-							}
-						} else {
-							// Error occurred
-							if (statusEl) statusEl.textContent = '❌ Error: ' + (response.data && response.data.message ? response.data.message : 'Unknown error');
-							if (progressText) progressText.textContent = 'Error occurred. Please try again.';
-							if (progressBar) progressBar.style.background = '#d63638';
-							if (overallProgressText) overallProgressText.textContent = '❌ Download failed for ' + source;
-							if (callback) callback(); // Continue anyway
-						}
-					},
-					error: function(xhr, status, error) {
-						var statusEl = document.getElementById(source.toLowerCase() + '-status');
-						var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
-						var overallProgressText = document.getElementById('overall-progress-text');
-						var errorMsg = error;
-						
-						// Try to parse error response
-						if (xhr.responseText) {
-							try {
-								var errorResponse = JSON.parse(xhr.responseText);
-								if (errorResponse.data && errorResponse.data.message) {
-									errorMsg = errorResponse.data.message;
-								}
-							} catch (e) {
-								// If response is HTML, extract error message
-								if (xhr.responseText.indexOf('<') !== -1) {
-									errorMsg = 'Server returned HTML instead of JSON. This usually means a PHP error occurred. Please check server logs.';
-								}
-							}
-						}
-						
-						if (statusEl) statusEl.textContent = '❌ Error: ' + errorMsg;
-						if (progressText) progressText.textContent = 'AJAX error occurred: ' + status + ' - ' + errorMsg;
-						if (overallProgressText) overallProgressText.textContent = '❌ Download failed for ' + source + ': ' + errorMsg;
-						if (callback) callback(); // Continue anyway
-					}
-				});
-			}
-			
-			// Start downloading chunks
-			downloadChunk();
-		}
-		
-		function finalizeDownload(source, callback) {
-			var nonce = downloadNonce || (document.getElementById('download-nonce') ? document.getElementById('download-nonce').value : '') || 
-				(document.querySelector('input[name="_wpnonce"]') ? document.querySelector('input[name="_wpnonce"]').value : '');
-			
-			jQuery.ajax({
-				url: ajaxurl,
-				type: 'POST',
-				data: {
-					action: 'f_bearpaw_finalize_download',
-					nonce: nonce,
-					source: source
-				},
-				dataType: 'json',
-				success: function(response) {
-					if (response.success && response.data) {
-						var progressText = document.getElementById(source.toLowerCase() + '-progress-text');
-						if (progressText) {
-							progressText.textContent = '✅ Saved: ' + response.data.products_count.toLocaleString() + ' products to file';
-						}
-					}
-					if (callback) callback();
-				},
-				error: function() {
-					if (callback) callback(); // Continue anyway
-				}
-			});
-		}
-		
-		// Auto-open accordion on page load based on URL parameter or completed steps
+		// Initialize accordion from URL parameter
 		document.addEventListener('DOMContentLoaded', function() {
 			var urlParams = new URLSearchParams(window.location.search);
 			var openStep = urlParams.get('open_step');
 			if (openStep) {
-				toggleAccordion(parseInt(openStep));
+				toggleAccordion(parseInt(openStep, 10));
 			}
 		});
 		</script>
