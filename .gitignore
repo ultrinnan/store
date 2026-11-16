@@ -1,3 +1,6 @@
+# Docker Compose: per-machine symlink to docker-compose.dev.yml or docker-compose.prod.yml
+docker-compose.override.yml
+
 # Environment files
 .env
 .env.local
@@ -78,6 +81,10 @@ src/wp-content/plugins/*
 # Except the themes folder
 !src/wp-content/
 !src/wp-content/themes/
+# ...but only our theme (default themes like twentytwentyfour stay untracked)
+src/wp-content/themes/*
+!src/wp-content/themes/index.php
+!src/wp-content/themes/veldrin/
 !src/wp-content/themes/veldrin/**
 
 # Re-ignore node_modules inside the Veldrin theme (override the un-ignore above)

@@ -1,12 +1,17 @@
+# Shared base for local dev and production.
+# Local:  docker-compose.override.yml -> docker-compose.dev.yml  (ports 8000/3306)
+# Prod:   docker-compose.override.yml -> docker-compose.prod.yml (Traefik, memory limits)
+# docker-compose.override.yml is gitignored; create it as a symlink (see README).
 services:
   db:
-    image: mysql:5.7
+    image: mysql:8.4
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--performance-schema=OFF"]
     platform: linux/x86_64
     container_name: veldrin-db
     restart: unless-stopped
     env_file: .env
     volumes:
-      - store_db_data:/var/lib/mysql
+      - store_db_data_84:/var/lib/mysql
 
   wordpress:
     image: wordpress:php8.3-apache
@@ -17,19 +22,8 @@ services:
     env_file: .env
     volumes:
       - ./src:/var/www/html
-    ports:
-      - "8000:80"
-    networks:
-      proxy:
-        aliases: [veldrin]
-      default: {}
-    labels:
-      - "traefik.enable=false"
+      - ./apache-mpm.conf:/etc/apache2/mods-available/mpm_prefork.conf:ro
+      - ./apache-tuning.conf:/etc/apache2/conf-enabled/zz-tuning.conf:ro
 
 volumes:
-  store_db_data:
-
-networks:
-  proxy:
-    external: true
-    name: proxy
+  store_db_data_84:

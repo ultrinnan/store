@@ -1,0 +1,2 @@
+# Added by Fixer: block web access to unit tests
+Require all denied

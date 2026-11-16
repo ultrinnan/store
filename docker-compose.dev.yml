@@ -1,0 +1,20 @@
+# Local development additions. Enable with:
+#   ln -s docker-compose.dev.yml docker-compose.override.yml
+services:
+  db:
+    ports:
+      - "127.0.0.1:3306:3306"
+
+  wordpress:
+    ports:
+      - "127.0.0.1:8000:80"
+
+  # WP-CLI, on demand only: docker compose run --rm wpcli <command>
+  wpcli:
+    image: wordpress:cli-php8.3
+    profiles: ["tools"]
+    depends_on:
+      - db
+    env_file: .env
+    volumes:
+      - ./src:/var/www/html
