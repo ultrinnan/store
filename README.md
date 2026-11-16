@@ -6,89 +6,71 @@ WordPress-based e-commerce store with optimized image handling and production-re
 
 ```
 store/
-├── src/                    # WordPress installation root
-│   ├── wp-admin/           # WordPress admin (gitignored)
-│   ├── wp-content/         # Content directory
-│   │   └── themes/
-│   │       └── veldrin/    # Custom Veldrin theme (tracked in git)
-│   ├── wp-includes/        # WordPress core (gitignored)
-│   ├── wp-config.php       # WordPress config (gitignored, auto-generated)
-│   └── wp-*.php            # WordPress core files (gitignored)
-├── docker-compose.yml      # Development environment (current)
-├── docker-compose.override.yml # Local Docker overrides
-├── .env                    # Environment variables (create from .env.example)
-├── .env.example            # Environment template
-├── README.md               # Project documentation
-└── IMPROVEMENTS.md         # Technical improvement roadmap
+├── src/                          # WordPress root (core, uploads, 3rd-party plugins are NOT in git)
+│   ├── wp-config.php             # Tracked; reads every secret from .env
+│   └── wp-content/
+│       ├── themes/veldrin/       # Custom Veldrin theme (tracked)
+│       ├── plugins/f-pro-*/      # Our plugins (tracked)
+│       └── mu-plugins/           # Must-use plugins (tracked)
+├── docker-compose.yml            # Shared base: MySQL 8.4 + WordPress (PHP 8.3, Apache)
+├── docker-compose.dev.yml        # Local additions: ports 8000 / 3306, wp-cli
+├── docker-compose.prod.yml       # Production additions: Traefik, memory limits
+├── docker-compose.override.yml   # NOT tracked: symlink to dev.yml (local) or prod.yml (server)
+├── apache-mpm.conf               # Apache prefork tuning (mounted read-only)
+├── apache-tuning.conf            # Apache KeepAlive tuning (mounted read-only)
+├── .env.example                  # Environment template (.env is never committed)
+└── IMPROVEMENTS.md               # Technical improvement roadmap
 ```
 
-## 🚀 Quick Start (Development)
+Docker Compose automatically loads `docker-compose.yml` + `docker-compose.override.yml`,
+so the symlink decides whether you get the local or the production setup.
 
-1. **Clone the repository:**
+## 🚀 Local Development
+
+1. **Clone and configure:**
    ```bash
-   git clone <repository-url>
-   cd store
+   git clone git@github.com:ultrinnan/store.git && cd store
+   cp .env.example .env        # fill in DB names/passwords and keys (any values work locally)
+   ln -s docker-compose.dev.yml docker-compose.override.yml
    ```
 
-2. **Create and configure .env (enable WordPress debug for LiveReload):**
-   - Ensure `WORDPRESS_DEBUG=true` (and optionally `WORDPRESS_DEBUG_LOG=true`)
+2. **Get WordPress core, plugins and uploads from production** (they are not in git;
+   tracked files are excluded so your local work is not overwritten; drop the uploads
+   exclude if you want all ~2.8 GB of images):
    ```bash
-   # .env
-   WORDPRESS_DEBUG=true
-   WORDPRESS_DEBUG_LOG=true
+   rsync -az --exclude 'wp-content/themes/veldrin/' --exclude 'wp-content/plugins/f-pro*/' \
+     --exclude 'wp-content/mu-plugins/' --exclude 'wp-config.php' --exclude 'wp-content/uploads/' \
+     vps:/srv/veldrin-store/src/ ./src/
    ```
 
-3. **Start development environment:**
+3. **Start containers and import a database dump** (the local volume starts empty):
    ```bash
-   docker-compose up -d
+   docker compose up -d
+   ssh vps 'ls -t /var/backups/vps/daily/*/veldrin/veldrin_db.sql.gz | head -1 | xargs cat' > prod.sql.gz
+   gunzip -c prod.sql.gz | docker exec -i veldrin-db sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+   docker compose run --rm wpcli search-replace https://veldrin.store http://localhost:8000 --all-tables
    ```
+   ⚠️ A prod dump contains real customer data: keep it local, never commit it (`*.sql*` is gitignored),
+   and keep `DISABLE_WP_CRON` on (see `.env.example`) so the local copy never sends order emails or
+   runs scheduled WooCommerce jobs.
 
-4. **Install theme deps and start watcher (Gulp + LiveReload):**
+4. **Theme assets (Gulp + LiveReload):**
    ```bash
    cd src/wp-content/themes/veldrin
    pnpm install
    pnpm run watch
    ```
 
-5. **Access the site:**
-   - Website: http://localhost:8000
-   - Database: localhost:3306 (user: store, password: store)
+5. **Access:** http://localhost:8000 (DB on `127.0.0.1:3306` with the credentials from your `.env`).
 
-## 🏭 Production Deployment
+## 🏭 Production (VPS)
 
-**Note:** A dedicated `docker-compose.prod.yml` file is planned but not yet implemented. Current production deployment uses the main `docker-compose.yml` with production-specific environment variables.
-
-1. **Prepare environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your production credentials
-   ```
-
-2. **Generate WordPress security keys:**
-   ```bash
-   curl -s https://api.wordpress.org/secret-key/1.1/salt/
-   # Copy the generated keys to your .env file
-   ```
-
-3. **Update WordPress debug settings in .env:**
-   ```bash
-   WORDPRESS_DEBUG=false
-   WORDPRESS_DEBUG_LOG=false
-   WORDPRESS_DEBUG_DISPLAY=false
-   WP_ENVIRONMENT_TYPE=production
-   ```
-
-4. **Build theme assets:**
-   ```bash
-   cd src/wp-content/themes/veldrin
-   pnpm install
-   pnpm run build
-   ```
-
-5. **Deploy with Docker:**
-   ```bash
-   docker-compose up -d
-   ```
+- Lives in `/srv/veldrin-store` with `docker-compose.override.yml -> docker-compose.prod.yml`.
+- Traefik (external network `traefik-public`) serves `veldrin.store` over HTTPS; no host ports are published.
+- Deploy code changes: `git pull` (theme/plugin files are bind-mounted, no restart needed), then
+  build theme assets if they changed: `cd src/wp-content/themes/veldrin && pnpm install && pnpm run build`.
+- Config changes: `docker compose up -d` (this recreates changed containers — plan for downtime).
+- `.env` must set `WORDPRESS_DEBUG=false` and `WP_ENVIRONMENT_TYPE=production`.
 
 ## 🔧 Configuration
 
@@ -128,7 +110,7 @@ WORDPRESS_LOGGED_IN_SALT=generate_unique_salt_here
 WORDPRESS_NONCE_SALT=generate_unique_salt_here
 ```
 
-**⚠️ IMPORTANT**: The `wp-config.php` currently has hardcoded fallback security keys. These MUST be replaced with unique keys from environment variables before production deployment.
+**Note:** `wp-config.php` has no fallback keys; all 8 keys/salts must be set in `.env` (generate them with `curl -s https://api.wordpress.org/secret-key/1.1/salt/`).
 
 ## 📊 Optimization Features
 
@@ -142,17 +124,17 @@ WORDPRESS_NONCE_SALT=generate_unique_salt_here
 ### Docker Commands
 ```bash
 # Start development environment
-docker-compose up -d
+docker compose up -d
 
 # Stop services
-docker-compose down
+docker compose down
 
 # View logs (all services)
-docker-compose logs -f
+docker compose logs -f
 
 # View logs (specific service)
-docker-compose logs -f wordpress
-docker-compose logs -f db
+docker compose logs -f wordpress
+docker compose logs -f db
 
 # Access database (container name: veldrin-db)
 docker exec -it veldrin-db mysql -u [DB_USER] -p[DB_PASSWORD] [DB_NAME]
@@ -164,7 +146,7 @@ docker exec veldrin-db mysqldump -u [DB_USER] -p[DB_PASSWORD] [DB_NAME] > backup
 docker exec -i veldrin-db mysql -u [DB_USER] -p[DB_PASSWORD] [DB_NAME] < backup.sql
 
 # Restart containers
-docker-compose restart
+docker compose restart
 
 # Check container status
 docker ps --filter "name=veldrin"
@@ -204,23 +186,9 @@ Troubleshooting:
 - Regular backups recommended
 - Keep WordPress and plugins updated
 
-## 📁 File Organization
+## 💾 Backups
 
-- **Development**: Files in root directory for easy access
-- **Production**: Files in `src/` directory for clean deployment
-- **Backups**: Excluded from Git, stored separately
-- **Uploads**: Optimized and cleaned regularly
-
-## 🚀 Deployment Checklist
-
-- [ ] Update `.env` with production credentials
-- [ ] Generate new WordPress security keys
-- [ ] Test with `docker-compose.prod.yml`
-- [ ] Configure reverse proxy (nginx/traefik)
-- [ ] Set up SSL certificates
-- [ ] Configure backups
-- [ ] Test all functionality
-- [ ] Monitor performance
+The VPS takes a nightly DB dump + file snapshot to `/var/backups/vps` (7 daily / 4 weekly / 6 monthly).
 
 ## 📞 Support
 
