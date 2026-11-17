@@ -24,6 +24,7 @@ services:
       - ./src:/var/www/html
       - ./apache-mpm.conf:/etc/apache2/mods-available/mpm_prefork.conf:ro
       - ./apache-tuning.conf:/etc/apache2/conf-enabled/zz-tuning.conf:ro
+      - ./php-custom.ini:/usr/local/etc/php/conf.d/zz-custom.ini:ro
 
 volumes:
   store_db_data_84:
